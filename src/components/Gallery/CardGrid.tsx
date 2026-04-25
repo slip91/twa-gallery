@@ -86,7 +86,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         {visibleCards.map((card, idx) => (
           <div key={card.id} onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={idx >= activeRange.start - BUFFER * 10 && idx <= activeRange.end + BUFFER * 5} />
+            <CardItem card={card} isActive={idx >= activeRange.start - BUFFER * 30 && idx <= activeRange.end + BUFFER * 30} />
           </div>
         ))}
       </div>
