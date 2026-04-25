@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect, useRef } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import type { CardItem as CardItemType } from '../../types/gallery';
 import { CardItem } from '../Card/CardItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -8,11 +8,7 @@ interface CardGridProps {
   onCardClick: (card: CardItemType) => void;
 }
 
-const ROW_H = 192;
-const COLS = 2;
-const GAP = 12;
 const BATCH_SIZE = 20;
-const BUFFER = 10;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
   if (cards.length === 0) {
@@ -21,60 +17,44 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [windowH, setWindowH] = useState(600);
 
   const visibleCards = cards.slice(0, visibleCount);
 
   const handleScroll = useCallback(() => {
-    setScrollTop(window.scrollY);
     const scrollHeight = document.documentElement.scrollHeight;
     const clientHeight = window.innerHeight;
 
-    if (window.scrollY + clientHeight >= scrollHeight - 50) {
+    if (window.scrollY + clientHeight >= scrollHeight - 100) {
       setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
     }
   }, [cards.length]);
 
   useEffect(() => {
-    setWindowH(window.innerHeight);
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', () => setWindowH(window.innerHeight));
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  const firstRow = Math.max(0, Math.floor(scrollTop / (ROW_H + GAP)));
-  const lastRow = Math.ceil((scrollTop + windowH) / (ROW_H + GAP));
-
   if (isDesktop) {
     return (
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20">
-        {visibleCards.map((card, idx) => {
-          const row = Math.floor(idx / 4);
-          const isActive = row >= firstRow - 5 && row <= lastRow + BUFFER;
-          return (
-            <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
-              <CardItem card={card} isActive={isActive} />
-            </div>
-          );
-        })}
+        {visibleCards.map((card) => (
+          <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
+            <CardItem card={card} isActive={true} />
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <div className="px-4 pb-20">
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
-        {visibleCards.map((card, idx) => {
-          const row = Math.floor(idx / COLS);
-          const isActive = row >= firstRow - BUFFER * 3 && row <= lastRow + BUFFER;
-          return (
-            <div key={card.id} onClick={() => onCardClick(card)}>
-              <CardItem card={card} isActive={isActive} />
-            </div>
-          );
-        })}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        {visibleCards.map((card) => (
+          <div key={card.id} onClick={() => onCardClick(card)}>
+            <CardItem card={card} isActive={true} />
+          </div>
+        ))}
       </div>
     </div>
   );
