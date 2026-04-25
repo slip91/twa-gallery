@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
 import { CrystalIcon } from '../components/Icons/CrystalIcon';
+import { useBackButton } from '../hooks/useBackButton';
+import { useHaptic } from '../hooks/useHaptic';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -8,29 +9,14 @@ interface ProfilePageProps {
 const CRYSTALS = 380;
 
 export function ProfilePage({ onBack }: ProfilePageProps) {
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp;
-    if (tg?.BackButton) {
-      tg.BackButton.show();
-      tg.BackButton.onClick(onBack);
-      return () => {
-        try {
-          tg.BackButton.offClick(onBack);
-          tg.BackButton.hide();
-        } catch {}
-      };
-    }
-  }, [onBack]);
-
-  const haptic = (style = 'light') => {
-    try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred(style); } catch {}
-  };
+  useBackButton(onBack);
+  const { impact } = useHaptic();
 
   return (
     <div className="min-h-screen bg-[var(--twa-bg)] pt-safe flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 bg-[var(--twa-surface)] border-b border-[var(--twa-border)]">
         <button
-          onClick={() => { haptic(); onBack(); }}
+          onClick={() => { impact(); onBack(); }}
           className="text-white text-sm active:opacity-70"
         >
           ← Назад
@@ -56,7 +42,7 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
             </div>
           </div>
           <button
-            onClick={() => haptic('medium')}
+            onClick={() => impact('medium')}
             className="w-full bg-[var(--twa-btn)] rounded-2xl py-3 text-white font-semibold text-sm active:opacity-70"
           >
             Пополнить

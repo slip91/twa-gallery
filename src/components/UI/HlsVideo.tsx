@@ -10,6 +10,12 @@ interface HlsVideoProps {
   onClick?: () => void;
 }
 
+const HLS_CONFIG = {
+  maxBufferLength: 6,
+  maxMaxBufferLength: 10,
+  startLevel: -1,
+} as const;
+
 export const HlsVideo = memo(function HlsVideo({
   src,
   muted = true,
@@ -25,28 +31,22 @@ export const HlsVideo = memo(function HlsVideo({
     const video = videoRef.current;
     if (!video || !src) return;
 
-    // Prefer HLS
     if (Hls.isSupported() && src.endsWith('.m3u8')) {
-      const hls = new Hls({
-        maxBufferLength: 6,
-        maxMaxBufferLength: 10,
-        startLevel: -1,
-      });
+      const hls = new Hls(HLS_CONFIG);
       hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
-      
+
       if (autoPlay) {
         hls.on(Hls.Events.MANIFEST_PARSED, (_, details) => {
-          // Max quality
           hls.currentLevel = details.levels.length - 1;
           video.play().catch(() => {});
         });
       }
 
       return () => hls.destroy();
-    } 
-    // Safari native HLS
+    }
+
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
       if (autoPlay) {
