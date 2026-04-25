@@ -17,11 +17,41 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
 
   const visibleCards = cards.slice(0, visibleCount);
 
   useEffect(() => {
+    let ticking = false;
+    const rowH = 204;
+
+    const update = () => {
+      const scrollTop = window.scrollY;
+      const viewH = window.innerHeight;
+
+      const firstRow = Math.max(0, Math.floor((scrollTop - 200) / rowH));
+      const lastRow = Math.ceil((scrollTop + viewH) / rowH);
+
+      const cols = isDesktop ? 4 : 2;
+      const start = Math.max(0, firstRow * cols);
+      const end = Math.min(lastRow * cols + cols * 3, cards.length);
+
+      const newActive = new Set<string>();
+      for (let i = start; i < end; i++) {
+        newActive.add(cards[i]?.id);
+      }
+      setActiveIds(newActive);
+    };
+
     const onScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          update();
+          ticking = false;
+        });
+        ticking = true;
+      }
+
       const scrollHeight = document.documentElement.scrollHeight;
       if (window.scrollY + window.innerHeight >= scrollHeight - 100) {
         setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
@@ -29,15 +59,17 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
+    update();
+
     return () => window.removeEventListener('scroll', onScroll);
-  }, [cards.length]);
+  }, [cards.length, isDesktop]);
 
   if (isDesktop) {
     return (
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20">
         {visibleCards.map((card) => (
           <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={true} />
+            <CardItem card={card} isActive={activeIds.has(card.id)} />
           </div>
         ))}
       </div>
@@ -49,7 +81,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         {visibleCards.map((card) => (
           <div key={card.id} onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={true} />
+            <CardItem card={card} isActive={activeIds.has(card.id)} />
           </div>
         ))}
       </div>
