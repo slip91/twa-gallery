@@ -30,13 +30,13 @@ export const BannerSlider = memo(function BannerSlider() {
     <div className="px-4 py-3">
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none">
         {BANNER_SLIDES.map((slide) => (
-          <div key={slide.id} className="flex-shrink-0 w-[calc(100%-32px)] snap-start relative rounded-2xl overflow-hidden h-44 md:h-52">
+          <div key={slide.id} className="flex-shrink-0 w-[calc(100%-32px)] snap-start relative rounded-2xl overflow-hidden h-44 md:h-80 lg:h-96">
             <img src={slide.poster} alt={slide.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-center px-5 gap-1">
-              <p className="text-white text-sm font-semibold leading-snug max-w-[70%] whitespace-pre-line">{slide.title}</p>
+              <p className="text-white text-sm md:text-lg font-semibold leading-snug max-w-[70%] whitespace-pre-line">{slide.title}</p>
               {slide.subtitle && (
-                <p className="text-white/70 text-xs font-medium leading-snug max-w-[70%] whitespace-pre-line">{slide.subtitle}</p>
+                <p className="text-white/70 text-xs md:text-sm font-medium leading-snug max-w-[70%] whitespace-pre-line">{slide.subtitle}</p>
               )}
             </div>
           </div>
