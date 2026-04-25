@@ -37,6 +37,11 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const cardHeight = useMemo(() => getCardHeight(card, isDesktop), [card, isDesktop]);
+  const isActiveRef = useRef(isActive);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -48,6 +53,7 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
     }
 
     const timer = setTimeout(() => {
+      if (!isActiveRef.current || !video) return;
       const url = card.videoUrl!;
       if (Hls.isSupported() && url.endsWith('.m3u8')) {
         if (!hlsRef.current) {
@@ -56,6 +62,7 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
           hls.loadSource(url);
           hls.attachMedia(video);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (!isActiveRef.current || !video) return;
             hls.startLevel = hls.firstLevel;
             video.play().catch(() => {});
           });
