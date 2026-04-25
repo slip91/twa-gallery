@@ -12,7 +12,7 @@ export const CardItem = memo(function CardItem({ card, isActive = false }: CardI
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
-  const cardHeight = card.tall ? 180 : 128;
+  const cardHeight = 180;
 
   useEffect(() => {
     const video = videoRef.current;
