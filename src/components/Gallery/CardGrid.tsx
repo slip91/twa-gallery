@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { CardItem as CardItemType } from '../../types/gallery';
 import { CardItem } from '../Card/CardItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -12,7 +12,6 @@ const ROW_H = 192;
 const COLS = 2;
 const GAP = 12;
 const BATCH_SIZE = 20;
-const BUFFER = 30;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
   if (cards.length === 0) {
@@ -21,52 +20,46 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
-  const [activeRange, setActiveRange] = useState({ start: 0, end: BATCH_SIZE + BUFFER });
-  const scrollRef = useRef<{ scrollTop: number; clientHeight: number }>({ scrollTop: 0, clientHeight: 600 });
+  const [activeRange, setActiveRange] = useState({ start: 0, end: BATCH_SIZE });
 
   const visibleCards = cards.slice(0, visibleCount);
 
   useEffect(() => {
-    const updateScroll = () => {
-      scrollRef.current.scrollTop = window.scrollY;
-      scrollRef.current.clientHeight = window.innerHeight;
-
-      const firstRow = Math.max(0, Math.floor(window.scrollY / (ROW_H + GAP)));
-      const lastRow = Math.ceil((window.scrollY + window.innerHeight) / (ROW_H + GAP));
-
-      const start = Math.max(0, firstRow * COLS - COLS * 2);
-      const end = Math.min(lastRow * COLS + COLS * 6, cards.length);
-
-      setActiveRange({ start, end });
-    };
-
     let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          updateScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
+    const updateScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const scrollTop = window.scrollY;
+        const clientH = window.innerHeight;
+        const cardH = 192;
+        const gap = 12;
+        const rowH = cardH + gap;
+
+        const firstRow = Math.floor(scrollTop / rowH);
+        const lastRow = Math.ceil((scrollTop + clientH) / rowH);
+
+        const start = Math.max(0, firstRow * COLS - 4);
+        const end = Math.min(lastRow * COLS + 12, cards.length);
+
+        setActiveRange({ start, end });
+        ticking = false;
+      });
     };
 
-    const onLoadMore = () => {
+    const onScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = window.innerHeight;
+      updateScroll();
       if (window.scrollY + clientHeight >= scrollHeight - 100) {
         setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
       }
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('scroll', onLoadMore, { passive: true });
     updateScroll();
 
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('scroll', onLoadMore);
-    };
+    return () => window.removeEventListener('scroll', onScroll);
   }, [cards.length]);
 
   if (isDesktop) {
