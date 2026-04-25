@@ -25,33 +25,31 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   const visibleCards = cards.slice(0, visibleCount);
 
   useEffect(() => {
-    let ticking = false;
+    let lastScroll = 0;
+
     const updateScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const scrollTop = window.scrollY;
-        const clientH = window.innerHeight;
-        const cardH = 192;
-        const gap = 12;
-        const rowH = cardH + gap;
+      const scrollTop = window.scrollY;
+      const clientH = window.innerHeight;
+      const rowH = 204;
 
-        const firstRow = Math.floor(scrollTop / rowH);
-        const lastRow = Math.ceil((scrollTop + clientH) / rowH);
+      const firstRow = Math.floor(scrollTop / rowH);
+      const lastRow = Math.ceil((scrollTop + clientH) / rowH);
 
-        const start = Math.max(0, firstRow * COLS - 4);
-        const end = Math.min(lastRow * COLS + 12, cards.length);
+      const start = Math.max(0, firstRow * COLS - 4);
+      const end = Math.min(lastRow * COLS + 12, cards.length);
 
-        setActiveRange({ start, end });
-        ticking = false;
-      });
+      setActiveRange({ start, end });
     };
 
     const onScroll = () => {
+      const scrollTop = window.scrollY;
+      if (Math.abs(scrollTop - lastScroll) > 10) {
+        lastScroll = scrollTop;
+        updateScroll();
+      }
+
       const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = window.innerHeight;
-      updateScroll();
-      if (window.scrollY + clientHeight >= scrollHeight - 100) {
+      if (window.scrollY + window.innerHeight >= scrollHeight - 100) {
         setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
       }
     };
