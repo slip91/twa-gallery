@@ -20,6 +20,8 @@ export const CardItem = memo(function CardItem({ card, isActive = false }: CardI
 
     if (!isActive) {
       video.pause();
+      video.removeAttribute('src');
+      video.load();
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
