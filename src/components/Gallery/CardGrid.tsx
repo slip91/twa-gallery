@@ -13,7 +13,6 @@ const COLS = 2;
 const GAP = 12;
 const BATCH_SIZE = 20;
 const BUFFER = 30;
-const MAX_ACTIVE = 12;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
   if (cards.length === 0) {
@@ -36,10 +35,9 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       const lastRow = Math.ceil((window.scrollY + window.innerHeight) / (ROW_H + GAP));
 
       const start = firstRow * COLS;
-      const end = Math.min(lastRow * COLS + COLS * BUFFER, cards.length);
+      const end = Math.min(lastRow * COLS + COLS * 6, cards.length);
 
-      const safeStart = Math.max(0, end - MAX_ACTIVE);
-      setActiveRange({ start: safeStart, end });
+      setActiveRange({ start, end });
     };
 
     let ticking = false;
