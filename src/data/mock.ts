@@ -9,9 +9,6 @@ export const BANNER_SLIDES: BannerSlide[] = [
 
 export const CATEGORIES: Category[] = ['Оживление', 'Фото', 'Видео'];
 
-const VIDEO_URLS = ['./videos/0416.mp4', './videos/0416(1).mp4', './videos/img_9630.mp4', './videos/img_9662.mp4'];
-const POSTERS = ['./images/6.jpg', './images/7.jpg', './images/9.jpg', './images/12.jpg'];
-
 const baseCards: CardItem[] = [
   { id: '1', title: 'Cyberpunk city', description: 'Неоновый город в стиле киберпанк', poster: './images/1.jpg', category: 'Оживление', isHot: true },
   { id: '2', title: 'Портрет в стиле', description: 'Фотореалистичный портрет', poster: './images/2.jpg', category: 'Фото' },
@@ -20,23 +17,23 @@ const baseCards: CardItem[] = [
   { id: '5', title: 'Anime girl', description: 'Аниме девочка', poster: './images/5.jpg', category: 'Фото', isHot: true },
 ];
 
-const videoUrls = ['./hls/0416.m3u8', './hls/0416(1).m3u8', './hls/img_9630.m3u8', './hls/img_9662.m3u8'];
-const posters = ['./images/6.jpg', './images/7.jpg', './images/9.jpg', './images/12.jpg'];
-const titles = ['Space background', 'Robot character', 'Fantasy landscape', 'Abstract art'];
-const descriptions = ['Космический фон', 'Робот персонаж', 'Фэнтези пейзаж', 'Абстрактное искусство'];
+const hlsVideoUrls = ['./hls/0416.m3u8', './hls/0416(1).m3u8', './hls/img_9630.m3u8', './hls/img_9662.m3u8'];
+const videoPosters = ['./images/6.jpg', './images/7.jpg', './images/9.jpg', './images/12.jpg'];
+const videoTitles = ['Space background', 'Robot character', 'Fantasy landscape', 'Abstract art'];
+const videoDescriptions = ['Космический фон', 'Робот персонаж', 'Фэнтези пейзаж', 'Абстрактное искусство'];
 
-const testVideoCards: CardItem[] = [];
+const videoCards: CardItem[] = [];
 for (let i = 0; i < 100; i++) {
   const idx = i % 4;
-  testVideoCards.push({
+  videoCards.push({
     id: `video_${i}`,
-    title: `${titles[idx]} ${i + 1}`,
-    description: `${descriptions[idx]} TEST`,
-    poster: posters[idx],
+    title: `${videoTitles[idx]} ${i + 1}`,
+    description: `${videoDescriptions[idx]} TEST`,
+    poster: videoPosters[idx],
     category: 'Видео',
-    videoUrl: videoUrls[idx],
+    videoUrl: hlsVideoUrls[idx],
     type: 'video',
   });
 }
 
-export const MOCK_CARDS: CardItem[] = [...baseCards, ...testVideoCards];
+export const MOCK_CARDS: CardItem[] = [...baseCards, ...videoCards];
