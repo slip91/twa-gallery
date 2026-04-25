@@ -11,10 +11,6 @@ interface CardGridProps {
 const BATCH_SIZE = 20;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
-  if (cards.length === 0) {
-    return <p className="py-16 text-center text-sm text-[var(--twa-hint)]">Ничего не найдено</p>;
-  }
-
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
@@ -68,6 +64,10 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     return () => window.removeEventListener('scroll', onScroll);
   }, [cards.length, isDesktop]);
 
+  if (cards.length === 0) {
+    return <p className="py-16 text-center text-sm text-[var(--twa-hint)]">Ничего не найдено</p>;
+  }
+
   if (isDesktop) {
     return (
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20">
@@ -81,14 +81,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   }
 
   return (
-    <div className="px-4 pb-20">
-      <div className="gallery-grid grid gap-3 px-4 pb-20" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-        {visibleCards.map((card) => (
-          <div key={card.id} onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={activeIds.has(card.id)} isDesktop={isDesktop} />
-          </div>
-        ))}
-      </div>
+    <div className="gallery-grid grid gap-3 px-4 pb-20" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+      {visibleCards.map((card) => (
+        <div key={card.id} onClick={() => onCardClick(card)}>
+          <CardItem card={card} isActive={activeIds.has(card.id)} isDesktop={isDesktop} />
+        </div>
+      ))}
     </div>
   );
 });

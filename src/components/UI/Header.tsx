@@ -33,7 +33,7 @@ export function Header({ onProfile }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-[var(--twa-surface)] border-b border-[var(--twa-border)]">
       <div className="flex items-center gap-2">
-        <div className="w-4 h-4 text-white">
+        <div className="w-5 h-5 md:w-6 md:h-6 text-white">
           <LogoIcon />
         </div>
         <span className="text-white font-bold text-sm tracking-wide">НЕЙРОСЕТКА</span>

@@ -7,7 +7,6 @@ interface CategoryOption {
 }
 
 const CATEGORY_OPTIONS: CategoryOption[] = [
-  { key: 'Все', label: 'Все' },
   { key: 'Оживление', label: 'Оживление' },
   { key: 'Фото', label: 'Фото' },
   { key: 'Видео', label: 'Видео' },

@@ -41,9 +41,12 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
           onClick={() => { haptic(); onProfile(); }}
           className="flex items-center gap-2 active:opacity-70"
         >
-          <div className="flex items-center gap-1 bg-[var(--twa-surface2)] px-2.5 py-1 rounded-full">
+          <div className="flex items-center gap-1.5 bg-[var(--twa-surface2)] px-2.5 py-1 rounded-full">
             <span className="text-[var(--twa-btn)]"><CrystalIcon size={13} /></span>
             <span className="text-white text-xs font-semibold">{CRYSTALS}</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fillRule="evenodd" clipRule="evenodd" d="M7 14C8.85652 14 10.637 13.2625 11.9497 11.9497C13.2625 10.637 14 8.85652 14 7C14 5.14348 13.2625 3.36301 11.9497 2.05025C10.637 0.737498 8.85652 0 7 0C5.14348 0 3.36301 0.737498 2.05025 2.05025C0.737498 3.36301 0 5.14348 0 7C0 8.85652 0.737498 10.637 2.05025 11.9497C3.36301 13.2625 5.14348 14 7 14ZM7.75 4.5C7.75 4.30109 7.67098 4.11032 7.53033 3.96967C7.38968 3.82902 7.19891 3.75 7 3.75C6.80109 3.75 6.61032 3.82902 6.46967 3.96967C6.32902 4.11032 6.25 4.30109 6.25 4.5V6.25H4.5C4.30109 6.25 4.11032 6.32902 3.96967 6.46967C3.82902 6.61032 3.75 6.80109 3.75 7C3.75 7.19891 3.82902 7.38968 3.96967 7.53033C4.11032 7.67098 4.30109 7.75 4.5 7.75H6.25V9.5C6.25 9.69891 6.32902 9.88968 6.46967 10.0303C6.61032 10.171 6.80109 10.25 7 10.25C7.19891 10.25 7.38968 10.171 7.53033 10.0303C7.67098 9.88968 7.75 9.69891 7.75 9.5V7.75H9.5C9.69891 7.75 9.88968 7.67098 10.0303 7.53033C10.171 7.38968 10.25 7.19891 10.25 7C10.25 6.80109 10.171 6.61032 10.0303 6.46967C9.88968 6.32902 9.69891 6.25 9.5 6.25H7.75V4.5Z" fill="white"/>
+            </svg>
           </div>
           <div className="w-7 h-7 rounded-full bg-[var(--twa-btn)] flex items-center justify-center">
             <span className="text-white text-xs font-bold">N</span>
@@ -55,7 +58,8 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
 
       {/* Gallery title with icon */}
       <div className="px-4 pt-2 pb-0 flex items-center gap-2">
-        <span className="text-[var(--twa-hint)]"><GalleryIcon /></span>
+        <span className="text-[var(--twa-hint)] hidden md:inline"><GalleryIcon size={40} /></span>
+        <span className="text-[var(--twa-hint)] md:hidden"><GalleryIcon size={28} /></span>
         <h2 className="text-white font-semibold text-[24px]">Галерея</h2>
       </div>
 

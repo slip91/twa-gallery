@@ -11,7 +11,7 @@ export interface CardItem {
   type?: 'photo' | 'video';
 }
 
-export type Category = 'Все' | 'Оживление' | 'Фото' | 'Видео';
+export type Category = 'Оживление' | 'Фото' | 'Видео';
 
 export type BannerSlide = {
   id: string;
@@ -20,4 +20,4 @@ export type BannerSlide = {
   poster: string;
 };
 
-export const CATEGORIES: Category[] = ['Все', 'Оживление', 'Фото', 'Видео'];
+export const CATEGORIES: Category[] = ['Оживление', 'Фото', 'Видео'];

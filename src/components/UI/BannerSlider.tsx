@@ -1,51 +1,23 @@
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo } from 'react';
 import { BANNER_SLIDES } from '../../data/mock';
 
 export const BannerSlider = memo(function BannerSlider() {
-  const [active, setActive] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      if (rafRef.current) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const idx = Math.round(el.scrollLeft / (el.offsetWidth - 16));
-        setActive(idx);
-      });
-    };
-
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      el.removeEventListener('scroll', handleScroll);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
   return (
-    <div className="px-4 py-3">
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none">
-        {BANNER_SLIDES.map((slide) => (
-          <div key={slide.id} className="flex-shrink-0 w-[calc(100%-32px)] snap-start relative rounded-2xl overflow-hidden h-44 md:h-52">
-            <img src={slide.poster} alt={slide.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-            <div className="absolute inset-0 flex flex-col justify-center px-5 gap-1">
-              <p className="text-white text-sm font-semibold leading-snug max-w-[70%] whitespace-pre-line">{slide.title}</p>
+    <div className="py-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4">
+        {BANNER_SLIDES.map((slide, i) => (
+          <div key={slide.id} className={`${i >= 2 ? 'hidden md:flex' : 'flex'} relative rounded-2xl overflow-hidden h-[100px] md:h-[112px] bg-[var(--twa-surface)] cursor-pointer active:opacity-80 transition-opacity`}>
+            <div className="flex-1 flex flex-col justify-center px-3 py-2 gap-1 z-10">
+              <p className="text-white text-[11px] font-semibold leading-snug line-clamp-3">{slide.title}</p>
               {slide.subtitle && (
-                <p className="text-white/70 text-xs font-medium leading-snug max-w-[70%] whitespace-pre-line">{slide.subtitle}</p>
+                <p className="text-white/50 text-[10px] leading-snug line-clamp-2">{slide.subtitle}</p>
               )}
             </div>
+            <div className="w-[42%] relative flex-shrink-0">
+              <img src={slide.poster} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--twa-surface)] to-transparent" />
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="flex justify-center gap-1.5 mt-3">
-        {BANNER_SLIDES.map((_, i) => (
-          <div key={i} className={`h-1.5 rounded-full transition-all ${i === active ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`} />
         ))}
       </div>
     </div>

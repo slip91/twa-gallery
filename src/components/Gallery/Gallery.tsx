@@ -9,10 +9,10 @@ interface GalleryProps {
 }
 
 export function Gallery({ onCardClick }: GalleryProps) {
-  const [active, setActive] = useState<Category>('Все');
+  const [active, setActive] = useState<Category>('Оживление');
 
   const filtered = useMemo(
-    () => active === 'Все' ? MOCK_CARDS : MOCK_CARDS.filter((c) => c.category === active),
+    () => MOCK_CARDS.filter((c) => c.category === active),
     [active]
   );
 
