@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect } from 'react';
+import { memo, useRef, useEffect, useMemo } from 'react';
 import Hls from 'hls.js';
 import type { CardItem as CardItemType } from '../../types/gallery';
 
@@ -8,61 +8,65 @@ interface CardItemProps {
   isDesktop?: boolean;
 }
 
-const DESKTOP_HEIGHTS = [260, 320, 280, 240, 300, 360];
+const DESKTOP_HEIGHTS = [260, 320, 280, 240, 300, 360] as const;
+const MOBILE_HEIGHT = 180;
+const HLS_CONFIG = {
+  maxBufferLength: 5,
+  maxMaxBufferLength: 10,
+} as const;
+const START_DEBOUNCE_MS = 100;
+
+function getCardHeight(card: CardItemType, isDesktop: boolean): number {
+  if (!isDesktop) return MOBILE_HEIGHT;
+  const idx = parseInt(card.id.split('_')[1] ?? '0', 10);
+  return DESKTOP_HEIGHTS[idx % DESKTOP_HEIGHTS.length];
+}
+
+function stopVideo(video: HTMLVideoElement, hlsRef: React.MutableRefObject<Hls | null>) {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  if (hlsRef.current) {
+    hlsRef.current.destroy();
+    hlsRef.current = null;
+  }
+}
 
 export const CardItem = memo(function CardItem({ card, isActive = false, isDesktop = false }: CardItemProps) {
-  const isVideo = card.type === 'video' && card.videoUrl;
+  const isVideo = card.type === 'video' && !!card.videoUrl;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-
-  const getHeight = () => {
-    if (!isDesktop) return 180;
-
-    const idx = parseInt(card.id.split('_')[1] || '0');
-    return DESKTOP_HEIGHTS[idx % DESKTOP_HEIGHTS.length];
-  };
-
-  const cardHeight = getHeight();
+  const cardHeight = useMemo(() => getCardHeight(card, isDesktop), [card, isDesktop]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo) return;
 
     if (!isActive) {
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
+      stopVideo(video, hlsRef);
       return;
     }
 
     const timer = setTimeout(() => {
       const url = card.videoUrl!;
       if (Hls.isSupported() && url.endsWith('.m3u8')) {
-        if (hlsRef.current) {
+        if (!hlsRef.current) {
+          const hls = new Hls(HLS_CONFIG);
+          hlsRef.current = hls;
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            hls.startLevel = hls.firstLevel;
+            video.play().catch(() => {});
+          });
+        } else {
           video.play().catch(() => {});
-          return;
         }
-        const hls = new Hls({
-          maxBufferLength: 5,
-          maxMaxBufferLength: 10,
-          startLevel: -1,
-        });
-        hlsRef.current = hls;
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          hls.startLevel = hls.firstLevel;
-          video.play().catch(() => {});
-        });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.play().catch(() => {});
       }
-    }, 100);
+    }, START_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
   }, [isActive, isVideo, card.videoUrl]);
