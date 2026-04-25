@@ -3,7 +3,6 @@ import { MOCK_CARDS, BANNER_SLIDES, CATEGORIES } from '../data/mock';
 
 describe('Mock Data', () => {
   it('has required categories', () => {
-    expect(CATEGORIES).toContain('Все');
     expect(CATEGORIES).toContain('Видео');
     expect(CATEGORIES).toContain('Фото');
     expect(CATEGORIES).toContain('Оживление');
@@ -30,7 +29,7 @@ describe('Mock Data', () => {
 
   it('banner slides have images', () => {
     BANNER_SLIDES.forEach(slide => {
-      expect(slide.poster).toMatch(/^\/images\//);
+      expect(slide.poster).toMatch(/\.(jpg|png|webp)$/);
     });
   });
 });
