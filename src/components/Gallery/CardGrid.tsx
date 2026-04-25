@@ -29,16 +29,20 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       const scrollTop = window.scrollY;
       const viewH = window.innerHeight;
 
-      const firstRow = Math.max(0, Math.floor(scrollTop / rowH));
-      const lastRow = Math.ceil((scrollTop + viewH) / rowH);
+      const gridEl = document.querySelector('.gallery-grid');
+      const gridTop = gridEl ? gridEl.getBoundingClientRect().top + scrollTop : scrollTop;
+      const scrollInGrid = scrollTop - gridTop;
+
+      const firstRow = Math.max(0, Math.floor(scrollInGrid / rowH));
+      const lastRow = Math.ceil((scrollInGrid + viewH) / rowH);
 
       const cols = isDesktop ? 4 : 2;
-      const start = Math.max(0, firstRow * cols);
+      const start = Math.max(0, firstRow * cols - cols);
       const end = Math.min(lastRow * cols + cols * 3, cards.length);
 
       const newActive = new Set<string>();
       for (let i = start; i < end; i++) {
-        newActive.add(cards[i]?.id);
+        if (cards[i]) newActive.add(cards[i].id);
       }
       setActiveIds(newActive);
     };
@@ -78,7 +82,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   return (
     <div className="px-4 pb-20">
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+      <div className="gallery-grid grid gap-3 px-4 pb-20" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         {visibleCards.map((card) => (
           <div key={card.id} onClick={() => onCardClick(card)}>
             <CardItem card={card} isActive={activeIds.has(card.id)} />
