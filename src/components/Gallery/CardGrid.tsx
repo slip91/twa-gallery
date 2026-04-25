@@ -1,6 +1,7 @@
 import { memo, useRef, useState, useCallback, useEffect } from 'react';
 import type { CardItem as CardItemType } from '../../types/gallery';
 import { CardItem } from '../Card/CardItem';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 interface CardGridProps {
   cards: CardItemType[];
@@ -15,6 +16,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     return <p className="py-16 text-center text-sm text-[var(--twa-hint)]">Ничего не найдено</p>;
   }
 
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [clientH, setClientH] = useState(600);
@@ -30,22 +32,51 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   const firstRow = Math.floor(scrollTop / ROW_H);
   const lastRow = Math.ceil((scrollTop + clientH) / ROW_H);
 
+  if (isDesktop) {
+    return (
+      <div
+        ref={scrollRef}
+        className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20"
+        style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
+        onScroll={handleScroll}
+      >
+        {cards.map((card, idx) => {
+          const row = Math.floor(idx / (isDesktop ? 4 : 2));
+          const isVisible = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
+          return (
+            <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
+              <CardItem card={card} isActive={isVisible} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={scrollRef}
-      className="columns-2 gap-3 px-4 pb-20"
+      className="px-4 pb-20"
       style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
       onScroll={handleScroll}
     >
-      {cards.map((card, idx) => {
-        const row = Math.floor(idx / 2);
-        const isVisible = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
-        return (
-          <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={isVisible} />
-          </div>
-        );
-      })}
+      <div
+        className="grid gap-3"
+        style={{
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridAutoRows: ROW_H,
+        }}
+      >
+        {cards.map((card, idx) => {
+          const row = Math.floor(idx / 2);
+          const isVisible = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
+          return (
+            <div key={card.id} onClick={() => onCardClick(card)}>
+              <CardItem card={card} isActive={isVisible} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 });
