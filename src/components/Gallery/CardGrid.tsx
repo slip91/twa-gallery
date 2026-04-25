@@ -34,7 +34,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       const firstRow = Math.max(0, Math.floor(window.scrollY / (ROW_H + GAP)));
       const lastRow = Math.ceil((window.scrollY + window.innerHeight) / (ROW_H + GAP));
 
-      const start = firstRow * COLS;
+      const start = Math.max(0, firstRow * COLS - COLS * 2);
       const end = Math.min(lastRow * COLS + COLS * 6, cards.length);
 
       setActiveRange({ start, end });
