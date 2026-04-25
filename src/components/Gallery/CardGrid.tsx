@@ -33,7 +33,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       const gridTop = gridEl ? gridEl.getBoundingClientRect().top + scrollTop : scrollTop;
       const scrollInGrid = scrollTop - gridTop;
 
-      const firstRow = Math.max(0, Math.floor(scrollInGrid / rowH));
+      const firstRow = Math.max(0, Math.floor((scrollInGrid - viewH * 0.5) / rowH));
       const lastRow = Math.ceil((scrollInGrid + viewH) / rowH);
 
       const cols = isDesktop ? 4 : 2;
