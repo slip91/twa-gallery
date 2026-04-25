@@ -73,7 +73,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20">
         {visibleCards.map((card) => (
           <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={activeIds.has(card.id)} />
+            <CardItem card={card} isActive={activeIds.has(card.id)} isDesktop={isDesktop} />
           </div>
         ))}
       </div>
@@ -85,7 +85,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       <div className="gallery-grid grid gap-3 px-4 pb-20" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         {visibleCards.map((card) => (
           <div key={card.id} onClick={() => onCardClick(card)}>
-            <CardItem card={card} isActive={activeIds.has(card.id)} />
+            <CardItem card={card} isActive={activeIds.has(card.id)} isDesktop={isDesktop} />
           </div>
         ))}
       </div>

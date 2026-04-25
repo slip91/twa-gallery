@@ -5,14 +5,24 @@ import type { CardItem as CardItemType } from '../../types/gallery';
 interface CardItemProps {
   card: CardItemType;
   isActive?: boolean;
+  isDesktop?: boolean;
 }
 
-export const CardItem = memo(function CardItem({ card, isActive = false }: CardItemProps) {
+const DESKTOP_HEIGHTS = [200, 260, 220, 180, 240, 300];
+
+export const CardItem = memo(function CardItem({ card, isActive = false, isDesktop = false }: CardItemProps) {
   const isVideo = card.type === 'video' && card.videoUrl;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
-  const cardHeight = 180;
+  const getHeight = () => {
+    if (!isDesktop) return 180;
+
+    const idx = parseInt(card.id.split('_')[1] || '0');
+    return DESKTOP_HEIGHTS[idx % DESKTOP_HEIGHTS.length];
+  };
+
+  const cardHeight = getHeight();
 
   useEffect(() => {
     const video = videoRef.current;
