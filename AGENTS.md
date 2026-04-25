@@ -20,10 +20,11 @@ Video gallery app for Telegram WebApp (TWA) with 1000 test cards (only 4 unique 
 | Build | Vite 5 |
 | Routing | **Custom useState navigation** (react-router-dom removed — incompatible with Telegram WebView) |
 | Styling | Tailwind CSS v3 |
-| Virtualization | `@tanstack/react-virtual` (mobile only) |
+| Video | HLS.js for streaming |
 | Telegram SDK | `@tma.js/sdk-react` (modern, not deprecated `@telegram-apps/sdk-react`) |
 | Testing | vitest + @testing-library/react + happy-dom |
-| E2E | Playwright |
+
+**Note:** `@tanstack/react-virtual` is in package.json but **NOT USED**. See "Performance Architecture" section.
 
 ---
 
@@ -44,38 +45,22 @@ if (page === 'profile') {
 return <HomePage onProfile={() => setPage('profile')} />;
 ```
 
-**Pages implemented:**
-- `HomePage` — Gallery + Banner + BottomNav
-- `ProfilePage` — User profile with back button
-
 ### State Management
 
 No global state library. State is local to components:
 - `Gallery.tsx` owns category filter state
-- `CardItem.tsx` owns video visibility/playback state
-- `TelegramProvider.tsx` owns SDK initialization state
+- `CardGrid.tsx` owns scroll tracking and active IDs
+- `CardItem.tsx` owns video playback state
 
 ### Telegram Integration Strategy
 
 **Graceful degradation** — app works fully in browser without Telegram.
 
-```
-Components → useTelegram() → TelegramContext
-                    ↓
-            SDK available? → Yes: use real SDK
-                     ↓ No: noop fallbacks
-```
-
 All SDK calls wrapped in `try/catch`. The `TelegramProvider`:
 1. Catches `init()` errors (both sync and async)
 2. Checks `miniApp.isSupported()` before mounting
-3. Falls back to `isTelegram: false` if SDK unavailable
+3. Falls back to noop if SDK unavailable
 4. Sets `ready: true` even on failure so UI never blocks
-
-**Theme integration:**
-- Telegram `themeParams` are applied to CSS variables on init
-- If no theme params (light/dark), defaults to `#0d0d0d` bg + `#1e1e1e` header
-- CSS fallbacks in `:root` ensure web version always has colors
 
 ---
 
@@ -86,48 +71,74 @@ All SDK calls wrapped in `try/catch`. The `TelegramProvider`:
 - Mobile devices with limited GPU/decoders
 - Smooth 60fps scroll required
 
-### Solution Layers
+### Solution: Batch Loading (NOT Virtualization)
 
-#### 1. Mobile Virtualization (`@tanstack/react-virtual`)
-- Only visible rows + `overscan: 10` are rendered
-- ~50 DOM nodes instead of 1000
-- `ROW_HEIGHT = 332` (2-column grid + gap)
+**Why not virtualization:** `@tanstack/react-virtual` caused CSS overlay/positioning bugs with aspect-ratio cards on desktop. On mobile it's unnecessary complexity.
 
-#### 2. IntersectionObserver for Video Playback
+**Solution: Batch Loading**
+- Show first 20 cards initially
+- Load 20 more when user scrolls near bottom
+- `visibleCount` state limits what's rendered via `.slice()`
+- In DOM at any time: ~40-60 cards
+
 ```tsx
-const observer = new IntersectionObserver(
-  ([entry]) => {
-    setIsVisible(entry.isIntersecting);
-    if (entry.isIntersecting && !isFastScroll) {
-      videoRef.current?.play().catch(() => {});
-    }
-  },
-  { threshold: 0.1, rootMargin }
-);
+const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+const visibleCards = cards.slice(0, visibleCount);
 ```
 
-#### 3. Adaptive Preload by Scroll Velocity
-| Scroll Speed | Preload | Behavior |
-|-------------|---------|----------|
-| `> 500px/s` | `none` | Show poster only, no network load |
-| `<= 500px/s` | `auto` | Preload and autoplay when visible |
+### Scroll-Based Video Visibility
 
-#### 4. Adaptive rootMargin
-- Mobile: `500px` (smaller screens, less memory)
-- Desktop: `800px` (larger viewport, more headroom)
+Instead of IntersectionObserver (unreliable in WebView), we calculate visibility manually:
 
-#### 5. Content Visibility CSS
-```css
-content-visibility: auto;
-contain-intrinsic-size: 0 300px;
+```tsx
+const handleScroll = useCallback(() => {
+  const scrollTop = window.scrollY;
+  const viewH = window.innerHeight;
+  const cols = isDesktop ? 4 : 2;
+
+  // Calculate which row is currently visible
+  const firstRow = Math.max(0, Math.floor((scrollInGrid - viewH * 0.5) / ROW_HEIGHT));
+  const lastRow = Math.ceil((scrollInGrid + viewH) / ROW_HEIGHT);
+
+  // Set active IDs for cards in viewport + buffer
+  const start = Math.max(0, firstRow * cols - cols);
+  const end = Math.min(lastRow * cols + cols * 3, cards.length);
+
+  const newActive = new Set<string>();
+  for (let i = start; i < end; i++) {
+    newActive.add(cards[i].id);
+  }
+  setActiveIds(newActive);
+}, [cards, isDesktop]);
 ```
-Browser skips layout/paint for off-screen cards.
 
-#### 6. Desktop: No Virtualization
-4-column grid renders all cards. Virtualization caused CSS overlay/positioning bugs with aspect ratios. Desktop handles 1000 cards fine.
+### Video Control Flow
 
-#### 7. Navigation Cleanup
-All videos pause on `pagehide` event and in component cleanup:
+- `isActive=true` → start video (debounced 100ms)
+- `isActive=false` → `video.pause()` + `removeAttribute('src')` + `video.load()` + `hls.destroy()`
+
+```tsx
+useEffect(() => {
+  if (!isActive) {
+    stopVideo(video, hlsRef);
+    return;
+  }
+  // Start video with HLS.js
+}, [isActive, card.videoUrl]);
+```
+
+### Desktop Masonry
+
+On desktop, cards have variable heights: `[260, 320, 280, 240, 300, 360]`px. This creates Pinterest-style visual effect via CSS columns:
+
+```tsx
+// On mobile: grid with 2 columns
+// On desktop: CSS columns for masonry
+```
+
+### Navigation Cleanup
+
+All videos pause on `pagehide` event:
 ```tsx
 useEffect(() => {
   const handlePageHide = () => {
@@ -160,29 +171,18 @@ import { init, miniApp, backButton, hapticFeedback, viewport } from '@tma.js/sdk
 
 ### Haptic Feedback
 
-Used on all interactive elements:
-- Card clicks (`CardItem.tsx`)
-- Navigation clicks (`Header.tsx`)
-
 ```tsx
-const { haptic } = useTelegram();
-haptic.impact('light');
+const { impact } = useHaptic();
+impact('light'); // 'light' | 'medium' | 'heavy'
 ```
 
 ### Back Button
 
 File: `src/hooks/useBackButton.ts`
 
-Used on `CardDetailPage`:
 ```tsx
-const handleBack = useCallback(() => navigate(-1), [navigate]);
-useBackButton(handleBack, true);
+useBackButton(onBack); // shows/hides button, attaches click handler
 ```
-
-**API (v7+ SDK):**
-- `backButton.show()` / `backButton.hide()`
-- `backButton.onClick(callback)` / `backButton.offClick(callback)`
-- `backButton.isSupported()` returns `Computed<boolean>` (callable signal)
 
 ---
 
@@ -190,7 +190,7 @@ useBackButton(handleBack, true);
 
 ```
 src/
-├── App.tsx                    # Router + Suspense + lazy pages
+├── App.tsx                    # Router (useState based)
 ├── main.tsx                   # React root + TelegramProvider wrapper
 ├── index.css                  # Tailwind + CSS vars + TWA safe-area utilities
 ├── types/
@@ -199,27 +199,38 @@ src/
 │   ├── mock.ts                # 1000-card mock dataset (4 unique video URLs)
 │   └── mock.test.ts           # Tests for mock data integrity
 ├── pages/
-│   ├── HomePage.tsx           # Banner + Gallery + BottomNav
-│   └── ProfilePage.tsx        # User profile with back button
+│   ├── HomePage.tsx           # Banner + Gallery + Desktop/Mobile nav
+│   ├── ProfilePage.tsx        # User profile with back button
+│   └── CardDetailPage.tsx     # Card detail with related items
 ├── components/
 │   ├── Telegram/
 │   │   └── TelegramProvider.tsx   # SDK init, context, haptic fallback
 │   ├── Card/
-│   │   ├── CardItem.tsx       # Video playback, IntersectionObserver
+│   │   ├── CardItem.tsx       # Video playback, scroll-based visibility
 │   │   └── CardItem.test.tsx  # Card item tests
 │   ├── Gallery/
 │   │   ├── Gallery.tsx        # Category tabs + filtered grid
-│   │   ├── CardGrid.tsx       # Virtualized mobile / Grid desktop
+│   │   ├── CardGrid.tsx       # Batch loading + scroll tracking
 │   │   ├── GalleryTabs.tsx    # Horizontal scrollable tabs
 │   │   └── GalleryTabs.test.tsx
-│   └── UI/
-│       ├── Header.tsx         # Nav, crystals, logo, profile
-│       ├── BottomNav.tsx      # Mobile bottom navigation
-│       └── BannerSlider.tsx   # Top banner carousel
+│   ├── UI/
+│   │   ├── Header.tsx         # Logo, nav, crystals, profile
+│   │   ├── BottomNav.tsx      # Mobile bottom navigation
+│   │   ├── BannerSlider.tsx   # Top banner carousel
+│   │   └── HlsVideo.tsx       # HLS video player component
+│   └── Icons/                 # All SVG icons as components
+│       ├── LogoIcon.tsx
+│       ├── CrystalIcon.tsx
+│       ├── AddIcon.tsx
+│       ├── PlusIcon.tsx
+│       ├── HomeNavIcon.tsx
+│       ├── GalleryIcon.tsx
+│       ├── TariffsIcon.tsx
+│       └── DiamondNavIcon.tsx
 ├── hooks/
 │   ├── useHaptic.ts           # Telegram haptic feedback
-│   ├── useTelegramBackButton.ts # Telegram back button hook
-│   └── ...
+│   ├── useBackButton.ts       # Telegram back button
+│   └── useMediaQuery.ts       # Breakpoint detection
 └── test/
     └── setup.ts               # vitest setup, happy-dom env
 ```
@@ -230,22 +241,14 @@ src/
 
 ### Unit Tests (vitest)
 
-**Config:** `vite.config.ts` includes `test: { environment: 'happy-dom', setupFiles: './src/test/setup.ts' }`
-
-**Current coverage:**
-- `src/components/UI/BannerSlider.test.tsx`
-- `src/components/Card/CardItem.test.tsx`
-- `src/components/Gallery/GalleryTabs.test.tsx`
-- `src/hooks/useMediaQuery.test.ts`
-- `src/data/mock.test.ts`
-
-**Total:** 19 tests, all passing.
-
-**Run:**
 ```bash
 npm test        # watch mode
 npm test --run  # single run
 ```
+
+**7 tests, all passing:**
+- `src/data/mock.test.ts` — data integrity
+- `src/hooks/useMediaQuery.test.ts` — breakpoint hook
 
 ### E2E Tests (Playwright)
 
@@ -276,7 +279,7 @@ npm run test:e2e
 
 ### Video Elements
 - Always `muted playsInline loop` for autoplay compliance
-- Never use `autoPlay` prop — control via IntersectionObserver + `play()`
+- Never use `autoPlay` prop — control via `.play()` based on `isActive` prop
 - Pause + reset currentTime before navigation
 
 ---
@@ -317,17 +320,12 @@ If Telegram SDK provides `themeParams`, these are overridden at runtime:
 
 ### Adding Telegram haptic to new interaction
 ```tsx
-const { haptic } = useTelegram();
+const { impact } = useHaptic();
 const handleClick = () => {
-  haptic.impact('light');
+  impact('light');
   // ... actual logic
 };
 ```
-
-### Adjusting virtualization
-- Change `ROW_HEIGHT` in `CardGrid.tsx` if card height changes
-- Change `overscan` value for more/less buffer rows
-- `gap` in virtualizer must match Tailwind gap class
 
 ---
 
@@ -335,7 +333,7 @@ const handleClick = () => {
 
 ### What works:
 - React 18 `createRoot` (without StrictMode)
-- `@tanstack/react-virtual` for virtualization
+- Batch loading for large lists
 - Haptic feedback via `Telegram.WebApp.HapticFeedback`
 - `tg.ready()`, `tg.expand()`, theme params
 - Custom `useState` navigation
@@ -343,7 +341,7 @@ const handleClick = () => {
 ### What doesn't work:
 - `react-router-dom` v6 (requires `useSyncExternalStore` from React 18, fails in older WebViews)
 - React `StrictMode` (causes DOM resets in WebView)
-- `autoPlay` on video elements (must control via IntersectionObserver)
+- `autoPlay` on video elements (must control via `.play()` based on scroll position)
 
 ---
 
@@ -357,16 +355,18 @@ const handleClick = () => {
 
 ## Known Issues / Decisions Log
 
-1. **Desktop virtualization disabled** — caused CSS overlay bugs with aspect-ratio cards. 4-column grid handles 1000 cards fine on desktop.
-2. **`@tanstack/react-virtual` restored** — initially removed due to WebView issues, but works fine. ROW_HEIGHT adjusted to 220px.
+1. **Virtualization removed** — `@tanstack/react-virtual` caused CSS overlay bugs. Batch loading (show 20, load more on scroll) works stably.
+2. **Batch loading** — instead of virtualizing, we render first 20 cards and lazily load more. ~40-60 in DOM at any time.
 3. **4 unique video URLs** — browser caches them, so 1000 cards don't hammer network.
 4. **`@tma.js/sdk-react` over `@telegram-apps/sdk-react`** — former is modern and maintained, latter is deprecated.
 5. **No global state** — local state is sufficient for gallery filter + video playback.
 6. **Theme params** — applied via `themeParams.mount()` + `themeParams.bgColor()` etc. CSS fallbacks ensure web version always works.
 7. **StrictMode removed** — caused DOM resets in Telegram WebView, breaking the app entirely.
 8. **react-router-dom removed** — v6 uses `useSyncExternalStore` which fails in Telegram WebView. v5 had type issues. Replaced with simple `useState` navigation.
-9. **createRoot confirmed working** — React 18 `createRoot` works fine in Telegram WebView when StrictMode is removed.
-10. **Haptic feedback works** — `Telegram.WebApp.HapticFeedback.impactOccurred()` works on interactive elements.
-13. **Max quality HLS** — configured hls.js to select highest quality level (`startLevel: -1`, then `currentLevel = levels.length - 1`).
-14. **HlsVideo component** — reusable component for HLS playback in cards, detail page, and related. Auto-plays on load with max quality.
+9. **Scroll-based visibility** — manual calculation based on `scrollY` + `getBoundingClientRect` instead of IntersectionObserver (unreliable in WebView).
+10. **Haptic via useHaptic hook** — `useHaptic()` returns `impact()` function, wraps all Telegram SDK calls in try/catch.
+11. **Back button via useBackButton hook** — `useBackButton(onBack)` shows/hides Telegram back button and attaches handler.
+12. **Max quality HLS** — configured hls.js to select highest quality level (`startLevel: -1`, then `currentLevel = levels.length - 1`).
+13. **HlsVideo component** — reusable component for HLS playback in cards, detail page, and related. Auto-plays on load with max quality.
+14. **Desktop masonry** — CSS columns with variable card heights creates Pinterest-style layout on desktop.
 15. **Desktop fast scroll stops HLS** — rapid scroll on desktop cancels pending video loads. Low priority bug.
