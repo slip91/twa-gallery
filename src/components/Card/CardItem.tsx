@@ -8,7 +8,7 @@ interface CardItemProps {
   isDesktop?: boolean;
 }
 
-const DESKTOP_HEIGHTS = [200, 260, 220, 180, 240, 300];
+const DESKTOP_HEIGHTS = [260, 320, 280, 240, 300, 360];
 
 export const CardItem = memo(function CardItem({ card, isActive = false, isDesktop = false }: CardItemProps) {
   const isVideo = card.type === 'video' && card.videoUrl;
