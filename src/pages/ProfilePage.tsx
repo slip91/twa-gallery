@@ -1,12 +1,11 @@
 import { CrystalIcon } from '../components/Icons/CrystalIcon';
 import { useBackButton } from '../hooks/useBackButton';
 import { useHaptic } from '../hooks/useHaptic';
+import { CRYSTALS } from '../constants';
 
 interface ProfilePageProps {
   onBack: () => void;
 }
-
-const CRYSTALS = 380;
 
 export function ProfilePage({ onBack }: ProfilePageProps) {
   useBackButton(onBack);

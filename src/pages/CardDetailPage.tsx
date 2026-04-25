@@ -6,6 +6,7 @@ import { AddIcon } from '../components/Icons/AddIcon';
 import { HlsVideo } from '../components/UI/HlsVideo';
 import { useBackButton } from '../hooks/useBackButton';
 import { useHaptic } from '../hooks/useHaptic';
+import { CRYSTALS, GENERATE_COST } from '../constants';
 import type { CardItem } from '../types/gallery';
 
 interface CardDetailPageProps {
@@ -15,8 +16,6 @@ interface CardDetailPageProps {
   onProfile: () => void;
   crystals: number;
 }
-
-const GENERATE_COST = 30;
 
 export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals }: CardDetailPageProps) {
   const isVideo = card.type === 'video' && card.videoUrl;

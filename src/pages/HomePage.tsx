@@ -11,6 +11,7 @@ import { TariffsIcon } from '../components/Icons/TariffsIcon';
 import { DiamondNavIcon } from '../components/Icons/DiamondNavIcon';
 import { PlusIcon } from '../components/Icons/PlusIcon';
 import { useHaptic } from '../hooks/useHaptic';
+import { CRYSTALS } from '../constants';
 import type { CardItem } from '../types/gallery';
 
 type NavTab = 'home' | 'gallery' | 'tariffs' | 'crystals';
@@ -19,8 +20,6 @@ interface HomePageProps {
   onProfile: () => void;
   onCardClick: (card: CardItem) => void;
 }
-
-const CRYSTALS = 380;
 
 const desktopNavItems = [
   { key: 'home', label: 'Главная' },

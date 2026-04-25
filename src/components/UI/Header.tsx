@@ -1,16 +1,18 @@
 import { LogoIcon } from '../Icons/LogoIcon';
 import { CrystalIcon } from '../Icons/CrystalIcon';
 import { AddIcon } from '../Icons/AddIcon';
+import { useHaptic } from '../../hooks/useHaptic';
+import { CRYSTALS } from '../../constants';
 
 interface HeaderProps {
   onProfile: () => void;
 }
 
 export function Header({ onProfile }: HeaderProps) {
+  const { impact } = useHaptic();
+
   const handleProfile = () => {
-    try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    } catch {}
+    impact();
     onProfile();
   };
 
@@ -26,7 +28,7 @@ export function Header({ onProfile }: HeaderProps) {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5 bg-[var(--twa-surface2)] rounded-full px-2 py-1">
           <CrystalIcon size={16} />
-          <span className="text-white text-xs font-medium">380</span>
+          <span className="text-white text-xs font-medium">{CRYSTALS}</span>
           <button className="hover:opacity-70 transition-opacity">
             <AddIcon />
           </button>
