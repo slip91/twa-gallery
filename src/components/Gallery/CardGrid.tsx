@@ -29,7 +29,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       const scrollTop = window.scrollY;
       const viewH = window.innerHeight;
 
-      const firstRow = Math.max(0, Math.floor((scrollTop - 200) / rowH));
+      const firstRow = Math.max(0, Math.floor(scrollTop / rowH));
       const lastRow = Math.ceil((scrollTop + viewH) / rowH);
 
       const cols = isDesktop ? 4 : 2;
