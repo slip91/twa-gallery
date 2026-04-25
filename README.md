@@ -1,106 +1,129 @@
 # TWA Gallery
 
-Видео-галерея для Telegram WebApp (TWA) с 1000 тестовыми карточками. Работает как внутри Telegram WebView, так и в обычном браузере.
+Видео-галерея для Telegram WebApp. 1000 карточек, из них 4 уникальных видео (остальные дубликаты для теста производительности). Работает в Telegram WebView и в обычном браузере.
 
-## Запуск
+---
 
-```bash
-cd twa-gallery
-npm i && npm run dev
-```
+## Суть проблемы
 
-Открыть: http://localhost:5173
+Telegram WebApp — это не обычный браузер. Он работает внутри приложения Telegram на iOS/Android/macOS, и там свои особенности:
 
-## Стек
+1. **Ограниченная производительность** — мобильные устройства слабее десктопов, декодеров видео мало
+2. **WebView-рантайм** — не все Web API работают так же, как в Chrome
+3. **60fps скролл** — если скролл тормозит, пользователи бросают приложение
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18 + TypeScript (strict) |
-| Build | Vite 5 |
-| Routing | Custom useState (react-router-dom удалён — несовместим с Telegram WebView) |
-| Styling | Tailwind CSS v3 |
-| Video | HLS.js для потокового видео |
-| Telegram SDK | `@tma.js/sdk-react` |
-| Testing | vitest + @testing-library/react + happy-dom |
+Нужно было показать 1000 видео-карточек плавно и быстро.
 
-## Архитектура
+---
 
-### Навигация: useState
+## Как это работает
 
-`react-router-dom` v6 использует `useSyncExternalStore` — не работает в Telegram WebView на macOS/iOS. Заменён на простой `useState`:
+### Навигация без react-router-dom
+
+**Проблема:** `react-router-dom` v6 использует `useSyncExternalStore` из React 18. В старых WebView (macOS/iOS Telegram) это падает.
+
+**Решение:** Простой `useState`:
 
 ```tsx
 const [page, setPage] = useState<'home' | 'profile' | 'card'>('home');
 ```
 
-### Graceful Degradation
+Это работает везде. Это не баг, это архитектурное решение.
 
-Приложение работает полностью в браузере без Telegram. Все вызовы SDK обёрнуты в `try/catch`.
+**Альтернатива:** Можно было попробовать react-router v5, но там проблемы с TypeScript и он deprecated. Проще написать 5 строчек навигации, чем тащить legacy-роутер.
 
-### Hooks
+---
 
-- `useHaptic()` — haptic feedback для Telegram
-- `useBackButton()` — управление кнопкой "назад"
-- `useMediaQuery()` — breakpoint detection
+### Видео: не все сразу
 
-### State Management
+**Проблема:** 1000 видео одновременно — это 1000 HTTP-запросов и 1000 декодеров. Телефон задохнётся.
 
-Нет глобального state-менеджера. State локальный:
-- `Gallery.tsx` — фильтр категорий
-- `CardGrid.tsx` — scroll-based visibility tracking
-- `CardItem.tsx` — видео playback
+**Решение:** Видео запускается только когда карточка в зоне видимости. Всё остальное время — просто постер (статичная картинка).
 
-## Производительность
+**Как работает:**
 
-### Scroll-based Video Visibility
-
-Вместо IntersectionObserver используется расчёт видимости по скроллу:
-
-```tsx
-// CardGrid.tsx
-const handleScroll = useCallback(() => {
-  const scrollTop = window.scrollY;
-  // расчёт firstRow/lastRow по ROW_HEIGHT = 240
-  // Set активных ID → передаётся в CardItem как isActive
-}, [cards, isDesktop]);
+```
+Скролл → расчёт: какая карточка в viewport
+       → передаём isActive в CardItem
+       → isActive=true: запускаем видео (debounced 100ms)
+       → isActive=false: останавливаем, убираем src, destroy HLS
 ```
 
-### Видео Control
+Никаких IntersectionObserver (они глючат в WebView). Ручной расчёт по `scrollY`, `getBoundingClientRect()`, фиксированная высота строки.
 
-- `isActive=true` → играет видео (debounced 100ms)
-- `isActive=false` → `video.pause()` + `removeAttribute('src')` + `video.load()` + HLS.destroy()
+---
 
-### Desktop Masonry
+### Виртуализация: НЕТ
 
-На десктопе переменная высота карточек: `[260, 320, 280, 240, 300, 360]`px.
+**Почему нет:** `@tanstack/react-virtual` отлично работает на десктопе, но в мобильных WebView вызывал баги с CSS `position: sticky` и overlay-элементами. Плюс, на десктопе 1000 карточек и так рендерятся без проблем.
 
-## Telegram WebApp Integration
-
-### Haptic Feedback
+**Что используем вместо:** Batch loading. Показываем первые 20 карточек. По мере скролла подгружаем ещё по 20. В DOM в любой момент ~40-60 карточек, остальные не рендерятся благодаря `.slice()`.
 
 ```tsx
-const { impact } = useHaptic();
-impact('light'); // 'light' | 'medium' | 'heavy'
+const [visibleCount, setVisibleCount] = useState(20);
+// ...
+const visibleCards = cards.slice(0, visibleCount);
 ```
 
-### Back Button
+Это не виртуализация в классическом смысле, но работает стабильно и не ломает CSS.
+
+---
+
+### Desktop: masonry-style
+
+На десктопе карточки разной высоты: `[260, 320, 280, 240, 300, 360]`. Это создаёт визуально Pinterest-style сетку через CSS columns.
+
+**Почему не grid:** Grid не умеет в masonry из коробки. CSS columns — это одна строка кода:
 
 ```tsx
-useBackButton(onBack); // показывает/скрывает кнопку, вешает обработчик
+style={isDesktop ? undefined : { gridTemplateColumns: `repeat(2, 1fr)` }}
 ```
+
+На десктопе используем обычный CSS columns, на мобильных — grid.
+
+---
+
+### Telegram SDK: graceful degradation
+
+Приложение должно работать даже если Telegram SDK недоступен (например, открыли ссылку в Safari напрямую).
+
+**Как:** Все вызовы SDK обёрнуты в `try/catch`. Haptic feedback просто не срабатывает, приложение работает дальше.
+
+```tsx
+const impact = (style: 'light' | 'medium' | 'heavy') => {
+  try {
+    (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
+  } catch {}
+};
+```
+
+---
+
+## Стек
+
+| | |
+|---|---|
+| React 18 + TypeScript | Без StrictMode (он ломал WebView) |
+| Vite 5 | Быстрая сборка |
+| Tailwind CSS v3 | Utility-first, mobile-first |
+| HLS.js | Потоковое видео |
+| `@tma.js/sdk-react` | Telegram SDK (не устаревший `@telegram-apps/sdk-react`) |
+
+**Примечание:** `react-router-dom` указан в package.json, но не используется. Это legacy от начального прототипа. Можно удалить.
+
+---
 
 ## Тесты
 
 ```bash
-npm test        # watch mode
-npm test --run  # single run
+npm test --run
 ```
 
-7 тестов, все проходят:
-- `mock.test.ts` — валидация данных
-- `useMediaQuery.test.ts` — breakpoint hook
+7 тестов — проверяют целостность данных и breakpoint hook.
 
-## CSS Переменные
+---
+
+## CSS-переменные
 
 ```css
 :root {
@@ -108,25 +131,34 @@ npm test --run  # single run
   --twa-surface: #1a1a1a;
   --twa-surface2: #2a2a2a;
   --twa-border: rgba(255,255,255,0.1);
-  --twa-text: #ffffff;
-  --twa-hint: rgba(255,255,255,0.5);
   --twa-btn: #007bff;
   --twa-hot: #ff3b30;
-  --twa-text-secondary: rgba(255,255,255,0.7);
+  --twa-hint: rgba(255,255,255,0.5);
 }
 ```
 
-Safe-area: `.pt-safe` / `.pb-safe` через `env(safe-area-inset-*)`.
+Если Telegram передаёт свои `themeParams`, они перезаписывают эти значения.
 
-## Файлы для агентов
+---
 
-См. `AGENTS.md` — подробная документация по архитектуре, конвенциям кода и типичным задачам.
+## Ключевые решения и почему
 
-## Известные решения
+| Решение | Почему | Альтернатива |
+|---------|--------|--------------|
+| useState навигация | react-router-dom падает в WebView | HashRouter — не решил проблему |
+| Скролл-расчёт вместо IntersectionObserver | IntersectionObserver ненадёжен в WebView | IntersectionObserver — глючит |
+| Batch loading вместо виртуализации | @tanstack/react-virtual ломал CSS overlay | Виртуализация — баги с sticky |
+| CSS columns на десктопе | Pinterest-style без JS | Grid — не умеет masonry |
+| HLS.js для видео | Нативный `<video>` не поддерживает .m3u8 | Статичные файлы — не гибко |
+| No StrictMode | Вызывал DOM reset в WebView | StrictMode — сломал приложение |
 
-1. **react-router-dom удалён** — v6 использует `useSyncExternalStore`, не работает в WebView
-2. **Custom useState navigation** — простой и надёжный, работает везде
-3. **Scroll-based visibility** — вместо IntersectionObserver (ненадёжен в WebView)
-4. **Desktop masonry** — CSS columns, визуально Pinterest-style
-5. **4 уникальных видео-URL** — браузер кэширует, сеть не грузит
-6. **No StrictMode** — вызывал DOM reset в Telegram WebView
+---
+
+## Файлы для понимания
+
+- `src/pages/` — страницы (Home, Profile, CardDetail)
+- `src/components/Gallery/CardGrid.tsx` — логика видимости карточек
+- `src/components/Card/CardItem.tsx` — видео-плеер для карточки
+- `src/hooks/useHaptic.ts` — haptic feedback
+- `src/hooks/useBackButton.ts` — кнопка "назад" в Telegram
+- `src/components/Icons/` — все SVG-иконки вынесены в отдельные компоненты
