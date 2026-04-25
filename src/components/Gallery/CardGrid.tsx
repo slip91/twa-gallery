@@ -31,7 +31,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     const scrollHeight = document.documentElement.scrollHeight;
     const clientHeight = window.innerHeight;
 
-    if (window.scrollY + clientHeight >= scrollHeight - 100) {
+    if (window.scrollY + clientHeight >= scrollHeight - 50) {
       setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
     }
   }, [cards.length]);
@@ -68,7 +68,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
         {visibleCards.map((card, idx) => {
           const row = Math.floor(idx / COLS);
-          const isActive = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
+          const isActive = row >= firstRow - BUFFER * 3 && row <= lastRow + BUFFER;
           return (
             <div key={card.id} onClick={() => onCardClick(card)}>
               <CardItem card={card} isActive={isActive} />
