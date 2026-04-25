@@ -12,7 +12,7 @@ export const CATEGORIES: Category[] = ['Оживление', 'Фото', 'Вид
 const baseCards: CardItem[] = [
   { id: '1', title: 'Cyberpunk city', description: 'Неоновый город в стиле киберпанк', poster: './images/1.jpg', category: 'Оживление', isHot: true },
   { id: '2', title: 'Портрет в стиле', description: 'Фотореалистичный портрет', poster: './images/2.jpg', category: 'Фото' },
-  { id: '3', title: '3D персонаж', description: 'Мультяшный персонаж', poster: './images/3.jpg', category: 'Оживление', tall: true },
+  { id: '3', title: '3D персонаж', description: 'Мультяшный персонаж', poster: './images/3.jpg', category: 'Оживление' },
   { id: '4', title: 'Логотип AI', description: 'Стильный логотип', poster: './images/4.jpg', category: 'Фото' },
   { id: '5', title: 'Anime girl', description: 'Аниме девочка', poster: './images/5.jpg', category: 'Фото', isHot: true },
 ];
