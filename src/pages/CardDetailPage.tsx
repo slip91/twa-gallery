@@ -45,7 +45,7 @@ export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals 
   const tabs = [card.category, 'Визуальные эффекты'];
 
   return (
-    <div className="min-h-screen bg-[var(--twa-bg)] flex flex-col pt-safe">
+    <div className="h-screen bg-[var(--twa-bg)] flex flex-col pt-safe">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-[var(--twa-surface)] border-b border-[var(--twa-border)]">
         <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals 
         </button>
       </header>
 
-      <div className="overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto pb-8">
         {/* Media — full width, square */}
         <div className="relative w-full aspect-square">
           {isVideo && card.videoUrl ? (
