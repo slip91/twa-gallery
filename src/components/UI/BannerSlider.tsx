@@ -30,7 +30,7 @@ export const BannerSlider = memo(function BannerSlider() {
     <div className="px-4 py-3">
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none">
         {BANNER_SLIDES.map((slide) => (
-          <div key={slide.id} className="flex-shrink-0 w-[calc(100%-32px)] snap-start relative rounded-2xl overflow-hidden h-44 md:h-52 lg:h-40">
+          <div key={slide.id} className="flex-shrink-0 w-[calc(100%-32px)] snap-start relative rounded-2xl overflow-hidden h-44 md:h-52">
             <img src={slide.poster} alt={slide.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-center px-5 gap-1">
