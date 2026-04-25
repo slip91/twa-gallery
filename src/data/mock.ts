@@ -6,6 +6,8 @@ export const BANNER_SLIDES: BannerSlide[] = [
   { id: '3', title: 'Генерируйте и оживляйте\nфото, создавайте видео', subtitle: 'Мы рады тому, что вы\nпользуетеся нашим сервисом', poster: './images/gallery3.jpg' },
   { id: '4', title: 'Генерируйте и оживляйте\nфото, создавайте видео', subtitle: 'Мы рады тому, что вы\nпользуетеся нашим сервисом', poster: './images/gallery4.jpg' },
   { id: '5', title: 'Генерируйте и оживляйте\nфото, создавайте видео', subtitle: 'Мы рады тому, что вы\nпользуетеся нашим сервисом', poster: './images/gallery1.jpg' },
+  { id: '6', title: 'Генерируйте и оживляйте\nфото, создавайте видео', subtitle: 'Мы рады тому, что вы\nпользуетеся нашим сервисом', poster: './images/gallery2.jpg' },
+  { id: '7', title: 'Генерируйте и оживляйте\nфото, создавайте видео', subtitle: 'Мы рады тому, что вы\nпользуетеся нашим сервисом', poster: './images/gallery3.jpg' },
 ];
 
 export const CATEGORIES: Category[] = ['Все', 'Оживление', 'Фото', 'Видео'];
