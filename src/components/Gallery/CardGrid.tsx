@@ -11,6 +11,8 @@ interface CardGridProps {
 const ROW_H = 192;
 const COLS = 2;
 const GAP = 12;
+const BATCH_SIZE = 20;
+const BUFFER = 10;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
   if (cards.length === 0) {
@@ -19,29 +21,31 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeRange, setActiveRange] = useState({ start: 0, end: 50 });
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const visibleCards = cards.slice(0, visibleCount);
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    const scrollTop = scrollRef.current.scrollTop;
-    const clientH = scrollRef.current.clientHeight;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
 
-    const firstRow = Math.floor(scrollTop / (ROW_H + GAP));
-    const lastRow = Math.ceil((scrollTop + clientH) / (ROW_H + GAP));
+    setScrollTop(scrollTop);
 
-    const start = firstRow * COLS;
-    const end = Math.min(lastRow * COLS + COLS * 4, cards.length);
-
-    setActiveRange({ start, end });
+    if (scrollTop + clientHeight >= scrollHeight - 300) {
+      setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
+    }
   }, [cards.length]);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
     return () => el.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  const firstRow = Math.floor(scrollTop / (ROW_H + GAP));
+  const lastRow = Math.ceil((scrollTop + (scrollRef.current?.clientHeight || 600)) / (ROW_H + GAP));
 
   if (isDesktop) {
     return (
@@ -50,12 +54,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
         className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20"
         style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
       >
-        {cards.map((card, idx) => {
-          const col = idx % 4;
-          const isVisible = idx >= activeRange.start - 4 && idx <= activeRange.end + 4;
+        {visibleCards.map((card, idx) => {
+          const row = Math.floor(idx / 4);
+          const isActive = row >= firstRow - 2 && row <= lastRow + BUFFER;
           return (
             <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
-              <CardItem card={card} isActive={isVisible} />
+              <CardItem card={card} isActive={isActive} />
             </div>
           );
         })}
@@ -70,11 +74,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
     >
       <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
-        {cards.map((card, idx) => {
-          const isVisible = idx >= activeRange.start - 4 && idx <= activeRange.end + 4;
+        {visibleCards.map((card, idx) => {
+          const row = Math.floor(idx / COLS);
+          const isActive = row >= firstRow - 2 && row <= lastRow + Math.floor(BUFFER / COLS);
           return (
             <div key={card.id} onClick={() => onCardClick(card)}>
-              <CardItem card={card} isActive={isVisible} />
+              <CardItem card={card} isActive={isActive} />
             </div>
           );
         })}
