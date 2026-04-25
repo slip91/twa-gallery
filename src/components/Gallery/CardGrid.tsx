@@ -23,7 +23,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   useEffect(() => {
     let ticking = false;
-    const rowH = 162; // 150 card + 12 gap
+    const rowH = 92; // 80 card + 12 gap
 
     const update = () => {
       const scrollTop = window.scrollY;
