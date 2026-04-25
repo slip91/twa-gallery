@@ -14,7 +14,7 @@ const HLS_CONFIG = {
   maxBufferLength: 5,
   maxMaxBufferLength: 10,
 } as const;
-const START_DEBOUNCE_MS = 100;
+const START_DEBOUNCE_MS = 50;
 
 function getCardHeight(card: CardItemType, isDesktop: boolean): number {
   if (!isDesktop) return MOBILE_HEIGHT;
