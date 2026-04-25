@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-Video gallery app for Telegram WebApp (TWA) with 1000 test cards (only 4 unique video URLs, rest are duplicates for testing performance). Works both inside Telegram WebView and standalone browser.
+Video gallery app for Telegram WebApp (TWA) with 105 test cards (5 static + 100 video, 4 unique video URLs). Works both inside Telegram WebView and standalone browser.
 
 **Primary goals:**
-1. Smooth scroll with 1000 video cards
+1. Smooth scroll with 105 video cards
 2. Pixel-perfect UI matching Figma design
 3. Telegram WebApp SDK integration (haptic, back button, theme)
 4. Mobile-first responsive (375px mobile → 1280px+ desktop)
@@ -67,7 +67,7 @@ All SDK calls wrapped in `try/catch`. The `TelegramProvider`:
 ## Performance Architecture
 
 ### Problem Space
-- 1000 cards, most are videos
+- 105 cards, most are videos
 - Mobile devices with limited GPU/decoders
 - Smooth 60fps scroll required
 
@@ -196,7 +196,7 @@ src/
 ├── types/
 │   └── gallery.ts             # CardItem type, Category union, CATEGORIES const
 ├── data/
-│   ├── mock.ts                # 1000-card mock dataset (4 unique video URLs)
+│   ├── mock.ts                # 105-card mock dataset (4 unique video URLs)
 │   └── mock.test.ts           # Tests for mock data integrity
 ├── pages/
 │   ├── HomePage.tsx           # Banner + Gallery + Desktop/Mobile nav
@@ -357,7 +357,7 @@ const handleClick = () => {
 
 1. **Virtualization removed** — `@tanstack/react-virtual` caused CSS overlay bugs. Batch loading (show 20, load more on scroll) works stably.
 2. **Batch loading** — instead of virtualizing, we render first 20 cards and lazily load more. ~40-60 in DOM at any time.
-3. **4 unique video URLs** — browser caches them, so 1000 cards don't hammer network.
+3. **4 unique video URLs** — browser caches them, so 105 cards don't hammer network.
 4. **`@tma.js/sdk-react` over `@telegram-apps/sdk-react`** — former is modern and maintained, latter is deprecated.
 5. **No global state** — local state is sufficient for gallery filter + video playback.
 6. **Theme params** — applied via `themeParams.mount()` + `themeParams.bgColor()` etc. CSS fallbacks ensure web version always works.

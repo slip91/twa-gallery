@@ -1,101 +1,39 @@
 # Video Performance Optimization
 
-## Проблемы
-1. **1000 видео на странице** — лаги при скролле
-2. **preload="none"** — мерцание при скролле
-3. **Все видео играли одновременно** — 20+ потоков
-4. **Видео не останавливались** — продолжали крутиться за экраном
+## Текущая архитектура
 
-## Решения
+### Batch Loading (НЕ виртуализация)
 
-### 1. Пауза при выходе из viewport
+- Первые 20 карточек рендерятся сразу
+- При скролле подгружаются ещё по 20
+- В DOM в любой момент ~40 карточек
+
+### Scroll-Based Video Visibility
+
+Вместо IntersectionObserver используется ручной расчёт видимости:
+
 ```tsx
-useEffect(() => {
-  if (isVisible && !isFastScroll) {
-    videoRef.current.play().catch(() => {});
-  } else if (!isVisible) {
-    videoRef.current.pause();
-  }
-}, [isVisible, isFastScroll]);
+const handleScroll = useCallback(() => {
+  const scrollTop = window.scrollY;
+  const viewH = window.innerHeight;
+  const cols = isDesktop ? 4 : 2;
+  const ROW_HEIGHT = 240;
+
+  const firstRow = Math.max(0, Math.floor((scrollInGrid - viewH * 0.5) / ROW_HEIGHT));
+  const lastRow = Math.ceil((scrollInGrid + viewH) / ROW_HEIGHT);
+
+  const start = Math.max(0, firstRow * cols - cols);
+  const end = Math.min(lastRow * cols + cols * 3, cards.length);
+
+  setActiveIds(new Set(cards.slice(start, end).map(c => c.id)));
+}, [cards, isDesktop]);
 ```
 
-### 2. Адаптивный preload по скорости скролла
-| Скорость скролла | Preload | Поведение |
-|------------------|---------|-----------|
-| `> 500px/s` | `none` | Только poster, без загрузки |
-| `<= 500px/s` | `auto` | Preload + autoplay при появлении |
+### Video Control
 
-### 3. Адаптивный rootMargin по устройству
-| Устройство | rootMargin | Причина |
-|-----------|-----------|---------|
-| Mobile | `500px` | Меньше экран, меньше памяти |
-| Desktop | `800px` | Больше экран, больше запас |
+- `isActive=true` → запуск видео (debounced 100ms)
+- `isActive=false` → `video.pause()` + `removeAttribute('src')` + `video.load()` + `hls.destroy()`
 
-### 4. Content-visibility CSS
-```css
-content-visibility: auto;
-contain-intrinsic-size: 0 300px;
-```
-Браузер пропускает layout/paint для off-screen карточек.
+### Desktop Masonry
 
-### 5. Виртуализация на мобильных (`@tanstack/react-virtual`)
-- Рендерятся только видимые ряды + `overscan: 10`
-- ~50 DOM-нод вместо 1000
-- `ROW_HEIGHT = 332` (2-колоночная сетка + gap)
-
-### 6. Desktop: без виртуализации
-4-колоночная grid рендерит все карточки. Виртуализация вызывала CSS overlay/positioning баги с aspect-ratio. Desktop справляется с 1000 карточками.
-
-### 7. Cleanup при навигации
-Все видео останавливаются на `pagehide` и в cleanup компонентов:
-```tsx
-useEffect(() => {
-  const handlePageHide = () => {
-    document.querySelectorAll('video').forEach(v => v.pause());
-  };
-  window.addEventListener('pagehide', handlePageHide);
-  return () => window.removeEventListener('pagehide', handlePageHide);
-}, []);
-```
-
-## Результаты
-
-| Метрика | До оптимизации | После |
-|---------|---------------|-------|
-| DOM video elements | 1000 | ~50 (виртуализация) |
-| Playing videos | 1000 | 3-7 |
-| Click response | ~500ms | ~0.5ms |
-| Видео за экраном | Не останавливались | Auto-pause |
-| Загрузка при скролле | Мерцание (preload="none") | Плавно (preload="auto") |
-
-## Параметры для тюнинга
-
-| Параметр | Значение | Описание |
-|----------|---------|----------|
-| `scrollVelocity` threshold | `500` px/s | Переключение между `none` и `auto` preload |
-| `rootMargin` mobile | `500px` | Запас подгрузки на мобильных |
-| `rootMargin` desktop | `800px` | Запас подгрузки на десктопе |
-| `overscan` | `10` | Количество рядов-буфера за экраном |
-| `ROW_HEIGHT` | `332` | Высота ряда в мобильной виртуализации |
-| `threshold` (IntersectionObserver) | `0.1` | Минимальная видимость для запуска видео |
-
-## Архитектура решений
-
-```
-CardItem
-  ├── IntersectionObserver → isVisible
-  ├── scrollVelocity → isFastScroll
-  ├── isFastScroll ? preload="none" : preload="auto"
-  └── isVisible && !isFastScroll → video.play()
-       └── !isVisible → video.pause()
-
-CardGrid (mobile)
-  └── @tanstack/react-virtual
-       ├── overscan: 10
-       ├── ROW_HEIGHT: 332
-       └── gap: 16px (соответствует Tailwind gap-4)
-
-CardGrid (desktop)
-  └── CSS Grid 4 columns
-       └── Без виртуализации (1000 карточок ок)
-```
+CSS columns с переменной высотой карточек: `[260, 320, 280, 240, 300, 360]`px
