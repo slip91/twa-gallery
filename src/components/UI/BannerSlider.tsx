@@ -14,7 +14,7 @@ export const BannerSlider = memo(function BannerSlider() {
               )}
             </div>
             <div className="w-[42%] relative flex-shrink-0">
-              <img src={slide.poster} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={slide.poster} alt="" loading={i < 2 ? 'eager' : 'lazy'} className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--twa-surface)] to-transparent" />
             </div>
           </div>
