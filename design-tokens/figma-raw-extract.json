@@ -1,0 +1,64 @@
+{
+  "figma_raw": {
+    "file": "figma.json",
+    "note": "Extracted from Figma Raw plugin - partial data due to JSON error"
+  },
+  "components": {
+    "Navigation Tab": {
+      "size": "L",
+      "width": 111,
+      "height": 43,
+      "cornerRadius": 16,
+      "padding": { "left": "Variable #247:246", "right": "Variable #247:246", "top": 12, "bottom": 12 },
+      "itemSpacing": { "value": 8, "variable": "Variable #247:244" }
+    },
+    "Button": {
+      "size": "S",
+      "type": "Secondary",
+      "width": 127,
+      "height": 43,
+      "cornerRadius": 16,
+      "padding": { "left": 24, "right": 24, "top": 12, "bottom": 12 },
+      "itemSpacing": 8
+    },
+    "Content Tabs": {
+      "variants": ["default", "hover", "focus"],
+      "sizes": ["S", "M", "L"],
+      "chip": { "size": "S", "cornerRadius": 12 }
+    }
+  },
+  "icons": {
+    "circleandimage": { "size": 16, "type": "INSTANCE" },
+    "workspace": { "size": 16, "type": "INSTANCE", "text": "Рабочее пространство" },
+    "crystal": { "size": 16, "type": "INSTANCE" },
+    "pricetag": { "size": 16, "type": "INSTANCE" },
+    "question": { "size": 16, "type": "INSTANCE" },
+    "fire": { "size": 16, "type": "INSTANCE" },
+    "stars": { "size": 16, "type": "INSTANCE" }
+  },
+  "colors": {
+    "surface": { "hex": "#1e1e1e", "variable": "Variable #272:26" },
+    "text": { "hex": "#ffffff", "variable": "Variable #252:374" },
+    "textSecondary": { "hex": "#8a8a8a" }
+  },
+  "fonts": {
+    "family": "Inter",
+    "style": "Semi Bold",
+    "weight": 600,
+    "fontSize": 16,
+    "letterSpacing": -3
+  },
+  "layout": {
+    "desktop_nav": {
+      "height": 43,
+      "padding": "px-16",
+      "gap": "gap-1",
+      "item_spacing": 8
+    },
+    "mobile": {
+      "header_height": 52,
+      "bottom_nav_height": 64,
+      "banner_height": 128
+    }
+  }
+}

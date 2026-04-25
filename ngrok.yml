@@ -1,0 +1,8 @@
+version: "2"
+tunnels:
+  webapp:
+    proto: http
+    addr: 3000
+    host_header: rewrite
+    request_headers:
+      ngrok-skip-browser-warning: "true"
