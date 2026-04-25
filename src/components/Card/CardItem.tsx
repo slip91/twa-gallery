@@ -31,11 +31,18 @@ export const CardItem = memo(function CardItem({ card, isActive = false }: CardI
       const url = card.videoUrl!;
       if (Hls.isSupported() && url.endsWith('.m3u8')) {
         if (hlsRef.current) return;
-        const hls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 20 });
+        const hls = new Hls({
+          maxBufferLength: 5,
+          maxMaxBufferLength: 10,
+          startLevel: -1,
+        });
         hlsRef.current = hls;
         hls.loadSource(url);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          hls.startLevel = hls.firstLevel;
+          video.play().catch(() => {});
+        });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.play().catch(() => {});
