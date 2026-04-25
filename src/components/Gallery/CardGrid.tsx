@@ -9,7 +9,7 @@ interface CardGridProps {
   onCardClick: (card: CardItemType) => void;
 }
 
-const ROW_H = 140;
+const ROW_H = 180;
 const COLS = 2;
 const GAP = 12;
 
