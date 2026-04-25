@@ -1,4 +1,5 @@
 import { memo, useRef, useState, useCallback, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { CardItem as CardItemType } from '../../types/gallery';
 import { CardItem } from '../Card/CardItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -9,7 +10,8 @@ interface CardGridProps {
 }
 
 const ROW_H = 140;
-const BUFFER = 4;
+const COLS = 2;
+const GAP = 12;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
   if (cards.length === 0) {
@@ -17,32 +19,49 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   }
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [clientH, setClientH] = useState(600);
+  const parentRef = useRef<HTMLDivElement>(null);
+  const [activeRange, setActiveRange] = useState({ start: 0, end: 20 });
 
-  useEffect(() => {
-    if (scrollRef.current) setClientH(scrollRef.current.clientHeight);
-  }, []);
+  const rowCount = Math.ceil(cards.length / COLS);
+
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_H + GAP,
+    overscan: 5,
+  });
 
   const handleScroll = useCallback(() => {
-    if (scrollRef.current) setScrollTop(scrollRef.current.scrollTop);
-  }, []);
+    if (!parentRef.current) return;
+    const scrollTop = parentRef.current.scrollTop;
+    const clientH = parentRef.current.clientHeight;
 
-  const firstRow = Math.floor(scrollTop / ROW_H);
-  const lastRow = Math.ceil((scrollTop + clientH) / ROW_H);
+    const firstRow = Math.floor(scrollTop / (ROW_H + GAP));
+    const lastRow = Math.ceil((scrollTop + clientH) / (ROW_H + GAP));
+
+    const start = firstRow * COLS;
+    const end = Math.min(lastRow * COLS + COLS * 2, cards.length);
+
+    setActiveRange({ start, end });
+  }, [cards.length]);
+
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   if (isDesktop) {
     return (
       <div
-        ref={scrollRef}
+        ref={parentRef}
         className="columns-2 md:columns-3 lg:columns-4 gap-3 px-4 pb-20"
         style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
-        onScroll={handleScroll}
       >
         {cards.map((card, idx) => {
-          const row = Math.floor(idx / (isDesktop ? 4 : 2));
-          const isVisible = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
+          const row = Math.floor(idx / 4);
+          const isVisible = row >= Math.floor(activeRange.start / 4) - 2 && row <= Math.ceil(activeRange.end / 4) + 2;
           return (
             <div key={card.id} className="mb-3 break-inside-avoid" onClick={() => onCardClick(card)}>
               <CardItem card={card} isActive={isVisible} />
@@ -55,24 +74,48 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   return (
     <div
-      ref={scrollRef}
+      ref={parentRef}
       className="px-4 pb-20"
       style={{ height: 'calc(100vh - 240px)', overflowY: 'auto' }}
-      onScroll={handleScroll}
     >
       <div
         className="grid gap-3"
         style={{
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gridAutoRows: ROW_H,
+          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+          height: virtualizer.getTotalSize(),
+          position: 'relative',
         }}
       >
-        {cards.map((card, idx) => {
-          const row = Math.floor(idx / 2);
-          const isVisible = row >= firstRow - BUFFER && row <= lastRow + BUFFER;
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const startIdx = virtualRow.index * COLS;
+          const rowCards = [
+            cards[startIdx],
+            cards[startIdx + 1],
+          ].filter(Boolean);
+
           return (
-            <div key={card.id} onClick={() => onCardClick(card)}>
-              <CardItem card={card} isActive={isVisible} />
+            <div
+              key={virtualRow.key}
+              style={{
+                position: 'absolute',
+                top: virtualRow.start,
+                left: 0,
+                right: 0,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                gap: GAP,
+              }}
+            >
+              {rowCards.map((card, colIdx) => {
+                if (!card) return null;
+                const idx = startIdx + colIdx;
+                const isVisible = idx >= activeRange.start && idx <= activeRange.end;
+                return (
+                  <div key={card.id} onClick={() => onCardClick(card)}>
+                    <CardItem card={card} isActive={isVisible} />
+                  </div>
+                );
+              })}
             </div>
           );
         })}
