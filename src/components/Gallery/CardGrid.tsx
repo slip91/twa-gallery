@@ -20,7 +20,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const parentRef = useRef<HTMLDivElement>(null);
-  const [activeRange, setActiveRange] = useState({ start: 0, end: 20 });
+  const [activeRange, setActiveRange] = useState({ start: 0, end: 50 });
 
   const rowCount = Math.ceil(cards.length / COLS);
 
@@ -49,6 +49,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     const el = parentRef.current;
     if (!el) return;
     el.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => el.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
