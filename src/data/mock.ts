@@ -26,7 +26,7 @@ const titles = ['Space background', 'Robot character', 'Fantasy landscape', 'Abs
 const descriptions = ['Космический фон', 'Робот персонаж', 'Фэнтези пейзаж', 'Абстрактное искусство'];
 
 const testVideoCards: CardItem[] = [];
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 100; i++) {
   const idx = i % 4;
   testVideoCards.push({
     id: `video_${i}`,
