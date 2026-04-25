@@ -3,6 +3,8 @@ import { GalleryIcon } from '../Icons/GalleryIcon';
 import { PlusIcon } from '../Icons/PlusIcon';
 import { TariffsIcon } from '../Icons/TariffsIcon';
 import { DiamondNavIcon } from '../Icons/DiamondNavIcon';
+import { useHaptic } from '../../hooks/useHaptic';
+import { NAV_LABELS } from '../../constants';
 
 interface BottomNavProps {
   activePage: string;
@@ -18,11 +20,11 @@ interface NavButtonProps {
 }
 
 const NavButton = ({ page, activePage, onNavigate, icon, label }: NavButtonProps) => {
+  const { impact } = useHaptic();
   const isActive = activePage === page;
+
   const handleClick = () => {
-    try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
-    } catch {}
+    impact();
     onNavigate(page);
   };
 
@@ -39,16 +41,18 @@ const NavButton = ({ page, activePage, onNavigate, icon, label }: NavButtonProps
 };
 
 export function BottomNav({ activePage, onNavigate }: BottomNavProps) {
+  const { impact } = useHaptic();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--twa-surface)] border-t border-[var(--twa-border)] pb-safe md:hidden">
       <div className="flex items-center justify-around h-16">
-        <NavButton page="home" activePage={activePage} onNavigate={onNavigate} icon={<HomeNavIcon active={activePage === 'home'} />} label="Главная" />
-        <NavButton page="gallery" activePage={activePage} onNavigate={onNavigate} icon={<GalleryIcon />} label="Галерея" />
-        <button onClick={() => { try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium'); } catch {} onNavigate('create'); }} className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black shadow-lg">
+        <NavButton page="home" activePage={activePage} onNavigate={onNavigate} icon={<HomeNavIcon active={activePage === 'home'} />} label={NAV_LABELS.home} />
+        <NavButton page="gallery" activePage={activePage} onNavigate={onNavigate} icon={<GalleryIcon />} label={NAV_LABELS.gallery} />
+        <button onClick={() => { impact('medium'); onNavigate('create'); }} className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black shadow-lg">
           <PlusIcon size={40} />
         </button>
-        <NavButton page="tariffs" activePage={activePage} onNavigate={onNavigate} icon={<TariffsIcon active={activePage === 'tariffs'} />} label="Тарифы" />
-        <NavButton page="crystals" activePage={activePage} onNavigate={onNavigate} icon={<DiamondNavIcon active={activePage === 'crystals'} />} label="Кристаллы" />
+        <NavButton page="tariffs" activePage={activePage} onNavigate={onNavigate} icon={<TariffsIcon active={activePage === 'tariffs'} />} label={NAV_LABELS.tariffs} />
+        <NavButton page="crystals" activePage={activePage} onNavigate={onNavigate} icon={<DiamondNavIcon active={activePage === 'crystals'} />} label={NAV_LABELS.crystals} />
       </div>
     </nav>
   );
