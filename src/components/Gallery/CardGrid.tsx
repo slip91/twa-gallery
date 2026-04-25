@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { memo, useState, useEffect, useCallback, useMemo } from 'react';
 import type { CardItem as CardItemType } from '../../types/gallery';
 import { CardItem } from '../Card/CardItem';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -20,15 +20,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
-  const scrollRef = useRef({ scrollTop: 0, viewH: 0, gridTop: 0 });
 
   const visibleCards = useMemo(() => cards.slice(0, visibleCount), [cards, visibleCount]);
 
   const handleScroll = useCallback(() => {
     const scrollTop = window.scrollY;
     const viewH = window.innerHeight;
-
-    scrollRef.current = { scrollTop, viewH, gridTop: 0 };
 
     const cols = isDesktop ? COLS_DESKTOP : COLS_MOBILE;
     const scrollInGrid = scrollTop;
@@ -81,10 +78,10 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   const cols = isDesktop ? COLS_DESKTOP : COLS_MOBILE;
 
   return (
-    <div className={`${isDesktop ? '' : 'gallery-grid'} grid gap-3 px-4 pb-20`}
+    <div className={isDesktop ? 'columns-4 gap-3 px-4 pb-20' : 'gallery-grid grid gap-3 px-4 pb-20'}
          style={isDesktop ? undefined : { gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
       {visibleCards.map((card) => (
-        <div key={card.id} onClick={() => onCardClick(card)}>
+        <div key={card.id} onClick={() => onCardClick(card)} className="mb-3 break-inside-avoid">
           <CardItem card={card} isActive={activeIds.has(card.id)} isDesktop={isDesktop} />
         </div>
       ))}
