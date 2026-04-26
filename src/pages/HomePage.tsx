@@ -29,6 +29,8 @@ const desktopNavItems = [
   { key: 'about', label: 'О нас' },
 ] as const;
 
+const NAV_ICON_SIZE = 14;
+
 export function HomePage({ onProfile, onCardClick }: HomePageProps) {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const { impact } = useHaptic();
@@ -55,12 +57,14 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
               <button
                 key={item.key}
                 onClick={() => { impact(); if (item.key !== 'about') handleTab(item.key as NavTab); }}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === item.key
                     ? 'text-white bg-white/10'
                     : 'text-[var(--twa-hint)] hover:text-white'
                 }`}
               >
+                {item.key === 'home' && <HomeNavIcon size={NAV_ICON_SIZE} active={activeTab === 'home'} />}
+                {item.key === 'gallery' && <GalleryIcon size={NAV_ICON_SIZE} />}
                 {item.label}
               </button>
             ))}
