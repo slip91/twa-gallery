@@ -32,7 +32,7 @@ export const GalleryTabs = memo(function GalleryTabs({ categories, active, onCha
             className={`flex-shrink-0 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
               isActive
                 ? 'bg-white text-black'
-                : 'bg-white/20 text-[var(--twa-hint)]'
+                : 'bg-[var(--twa-surface2)] text-[var(--twa-hint)]'
             }`}
           >
             {opt.label}
