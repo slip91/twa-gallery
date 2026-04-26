@@ -1,10 +1,9 @@
-import { memo, useRef, useEffect, useMemo } from 'react';
+import { memo, useRef, useEffect, useState, useMemo } from 'react';
 import Hls from 'hls.js';
 import type { CardItem as CardItemType } from '../../types/gallery';
 
 interface CardItemProps {
   card: CardItemType;
-  isActive?: boolean;
   isDesktop?: boolean;
 }
 
@@ -14,7 +13,9 @@ const HLS_CONFIG = {
   maxBufferLength: 5,
   maxMaxBufferLength: 10,
 } as const;
-const START_DEBOUNCE_MS = 50;
+const START_DEBOUNCE_MS = 150;
+// Start loading a bit before card enters viewport, stop shortly after it leaves
+const IO_ROOT_MARGIN = '100px 0px';
 
 function getCardHeight(card: CardItemType, isDesktop: boolean): number {
   if (!isDesktop) return MOBILE_HEIGHT;
@@ -32,28 +33,44 @@ function stopVideo(video: HTMLVideoElement, hlsRef: React.MutableRefObject<Hls |
   }
 }
 
-export const CardItem = memo(function CardItem({ card, isActive = false, isDesktop = false }: CardItemProps) {
+export const CardItem = memo(function CardItem({ card, isDesktop = false }: CardItemProps) {
   const isVideo = card.type === 'video' && !!card.videoUrl;
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const articleRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const isVisibleRef = useRef(false);
   const cardHeight = useMemo(() => getCardHeight(card, isDesktop), [card, isDesktop]);
-  const isActiveRef = useRef(isActive);
 
+  // IntersectionObserver — точно определяет видимость для любого лейаута
   useEffect(() => {
-    isActiveRef.current = isActive;
-  }, [isActive]);
+    if (!isVideo) return;
+    const el = articleRef.current;
+    if (!el) return;
 
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+        setIsVisible(entry.isIntersecting);
+      },
+      { rootMargin: IO_ROOT_MARGIN, threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [isVideo]);
+
+  // Запускаем/останавливаем видео в зависимости от видимости
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo) return;
 
-    if (!isActive) {
+    if (!isVisible) {
       stopVideo(video, hlsRef);
       return;
     }
 
     const timer = setTimeout(() => {
-      if (!isActiveRef.current || !video) return;
+      if (!isVisibleRef.current || !video) return;
       const url = card.videoUrl!;
       if (Hls.isSupported() && url.endsWith('.m3u8')) {
         if (!hlsRef.current) {
@@ -62,7 +79,7 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
           hls.loadSource(url);
           hls.attachMedia(video);
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            if (!isActiveRef.current || !video) return;
+            if (!isVisibleRef.current || !video) return;
             hls.startLevel = hls.firstLevel;
             video.play().catch(() => {});
           });
@@ -76,10 +93,13 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
     }, START_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [isActive, isVideo, card.videoUrl]);
+  }, [isVisible, isVideo, card.videoUrl]);
 
   return (
-    <article className="flex flex-col cursor-pointer rounded-2xl overflow-hidden bg-[var(--twa-surface)] active:opacity-80 transition-opacity">
+    <article
+      ref={articleRef}
+      className="flex flex-col cursor-pointer rounded-2xl overflow-hidden bg-[var(--twa-surface)] active:opacity-80 transition-opacity"
+    >
       <div className="w-full relative flex-shrink-0" style={{ height: cardHeight }}>
         {isVideo ? (
           <video ref={videoRef} muted playsInline loop preload="none" className="w-full h-full object-cover block" />
