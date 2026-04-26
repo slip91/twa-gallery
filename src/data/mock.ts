@@ -9,31 +9,93 @@ export const BANNER_SLIDES: BannerSlide[] = [
 
 export const CATEGORIES: Category[] = ['Оживление', 'Фото', 'Видео'];
 
-const baseCards: CardItem[] = [
-  { id: '1', title: 'Cyberpunk city', description: 'Неоновый город в стиле киберпанк', poster: './images/1.jpg', category: 'Оживление', isHot: true },
-  { id: '2', title: 'Портрет в стиле', description: 'Фотореалистичный портрет', poster: './images/2.jpg', category: 'Фото' },
-  { id: '3', title: '3D персонаж', description: 'Мультяшный персонаж', poster: './images/3.jpg', category: 'Оживление' },
-  { id: '4', title: 'Логотип AI', description: 'Стильный логотип', poster: './images/4.jpg', category: 'Фото' },
-  { id: '5', title: 'Anime girl', description: 'Аниме девочка', poster: './images/5.jpg', category: 'Фото', isHot: true },
-];
+const HLS = ['./hls/0416.m3u8', './hls/0416(1).m3u8', './hls/img_9630.m3u8', './hls/img_9662.m3u8'];
+const IMGS = Array.from({ length: 12 }, (_, i) => `./images/${i + 1}.jpg`);
 
-const hlsVideoUrls = ['./hls/0416.m3u8', './hls/0416(1).m3u8', './hls/img_9630.m3u8', './hls/img_9662.m3u8'];
-const videoPosters = ['./images/6.jpg', './images/7.jpg', './images/9.jpg', './images/12.jpg'];
-const videoTitles = ['Space background', 'Robot character', 'Fantasy landscape', 'Abstract art'];
-const videoDescriptions = ['Космический фон', 'Робот персонаж', 'Фэнтези пейзаж', 'Абстрактное искусство'];
-
-const videoCards: CardItem[] = [];
-for (let i = 0; i < 100; i++) {
-  const idx = i % 4;
-  videoCards.push({
-    id: `video_${i}`,
-    title: `${videoTitles[idx]} ${i + 1}`,
-    description: `${videoDescriptions[idx]} TEST`,
-    poster: videoPosters[idx],
-    category: 'Видео',
-    videoUrl: hlsVideoUrls[idx],
-    type: 'video',
-  });
+// Seeded pseudo-random for stable order between renders
+function seededRand(seed: number) {
+  let s = seed;
+  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
 }
 
-export const MOCK_CARDS: CardItem[] = [...baseCards, ...videoCards];
+const rand = seededRand(42);
+const pick = <T>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
+const maybe = (p: number) => rand() < p;
+
+const ANIM_TITLES = [
+  'Cyberpunk City', 'Dragon Flight', 'Neon Tokyo', 'Space Explorer', 'Forest Spirit',
+  'Ocean Depths', 'Desert Storm', 'Arctic Fox', 'Jungle Hunt', 'Volcano Eruption',
+  'Galaxy Swirl', 'Time Lapse', 'Smoke Dance', 'Fire Bloom', 'Water Ripple',
+];
+const ANIM_DESCS = [
+  'Неоновый город в стиле киберпанк', 'Полёт дракона над горами', 'Токийские огни ночью',
+  'Путешествие в космосе', 'Дух древнего леса', 'Подводный мир океана',
+  'Буря в пустыне', 'Арктическая лиса в снегу', 'Охота в джунглях',
+  'Извержение вулкана', 'Водоворот галактик', 'Таймлапс рассвета',
+  'Танец дыма', 'Цветение огня', 'Рябь на воде',
+];
+
+const PHOTO_TITLES = [
+  'Portrait Realism', 'AI Concept Art', 'Anime Girl', 'Sci-Fi Warrior', 'Dark Fantasy',
+  'Retro Future', 'Nature Portrait', 'Urban Grunge', 'Mythical Creature', 'Neon Portrait',
+  'Steampunk Hero', 'Ethereal Beauty', 'Pixel Art', 'Oil Painting', 'Watercolor Dream',
+];
+const PHOTO_DESCS = [
+  'Фотореалистичный портрет', 'Концепт-арт с AI', 'Аниме девочка в цвете',
+  'Воин будущего', 'Тёмное фэнтези', 'Ретро-футуризм', 'Портрет на природе',
+  'Городской гранж', 'Мифическое существо', 'Неоновый портрет',
+  'Стимпанк герой', 'Эфирная красота', 'Пиксель арт', 'Масляная живопись', 'Акварельный сон',
+];
+
+const VIDEO_TITLES = [
+  'Space Background', 'Robot Character', 'Fantasy Landscape', 'Abstract Art',
+  'Lava Flow', 'Lightning Storm', 'Particle Wave', 'Morphing Shapes',
+  'City at Night', 'Aurora Borealis', 'Deep Sea', 'Wind in Wheat',
+];
+const VIDEO_DESCS = [
+  'Космический фон', 'Робот персонаж', 'Фэнтези пейзаж', 'Абстрактное искусство',
+  'Поток лавы', 'Гроза с молниями', 'Волна частиц', 'Морфинг фигур',
+  'Ночной город', 'Северное сияние', 'Глубины океана', 'Ветер в пшенице',
+];
+
+// Build Оживление: mostly videos, some images
+const animCards: CardItem[] = Array.from({ length: 18 }, (_, i) => {
+  const useVideo = maybe(0.6);
+  return {
+    id: `anim_${i}`,
+    title: ANIM_TITLES[i % ANIM_TITLES.length],
+    description: ANIM_DESCS[i % ANIM_DESCS.length],
+    poster: pick(IMGS),
+    category: 'Оживление' as Category,
+    isHot: i < 2,
+    ...(useVideo ? { type: 'video' as const, videoUrl: pick(HLS) } : {}),
+  };
+});
+
+// Build Фото: mostly images, some videos sprinkled in
+const photoCards: CardItem[] = Array.from({ length: 16 }, (_, i) => {
+  const useVideo = maybe(0.25);
+  return {
+    id: `photo_${i}`,
+    title: PHOTO_TITLES[i % PHOTO_TITLES.length],
+    description: PHOTO_DESCS[i % PHOTO_DESCS.length],
+    poster: pick(IMGS),
+    category: 'Фото' as Category,
+    isHot: i === 2,
+    ...(useVideo ? { type: 'video' as const, videoUrl: pick(HLS) } : {}),
+  };
+});
+
+// Build Видео: all videos
+const videoCards: CardItem[] = Array.from({ length: 40 }, (_, i) => ({
+  id: `video_${i}`,
+  title: `${VIDEO_TITLES[i % VIDEO_TITLES.length]}`,
+  description: VIDEO_DESCS[i % VIDEO_DESCS.length],
+  poster: pick(IMGS),
+  category: 'Видео' as Category,
+  type: 'video' as const,
+  videoUrl: pick(HLS),
+  isHot: i === 0,
+}));
+
+export const MOCK_CARDS: CardItem[] = [...animCards, ...photoCards, ...videoCards];
