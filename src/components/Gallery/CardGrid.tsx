@@ -12,11 +12,9 @@ const BATCH_SIZE = 20;
 const LOAD_MORE_THRESHOLD = 300;
 const COLS_MOBILE = 2;
 const COLS_DESKTOP = 4;
-// Average card heights per layout
-const ROW_HEIGHT_MOBILE = 220;  // 180px card + ~40px text block
-const ROW_HEIGHT_DESKTOP = 340; // avg of [260,320,280,240,300,360] ≈ 293px + ~40px text
-// How many rows above/below viewport to keep active
-const BUFFER_ROWS = 3;
+const ROW_HEIGHT_MOBILE = 240;
+const ROW_HEIGHT_DESKTOP = 240;
+const BUFFER_ROWS = 4;
 
 function getViewportHeight(): number {
   return window.innerHeight || document.documentElement.clientHeight || 667;
