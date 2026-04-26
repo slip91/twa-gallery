@@ -53,7 +53,7 @@ export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals 
       <div className="flex-1 overflow-y-auto pb-8">
         <div className="max-w-[1280px] mx-auto">
           {/* Media */}
-          <div className="relative w-full aspect-square md:aspect-auto md:h-[520px]">
+          <div className="relative w-full aspect-square lg:aspect-auto lg:h-[520px]">
             {isVideo && card.videoUrl ? (
               <HlsVideo
                 src={card.videoUrl}

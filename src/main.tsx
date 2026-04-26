@@ -23,7 +23,15 @@ function App() {
   }
 
   if (page === 'card' && selectedCard) {
-    return <CardDetailPage card={selectedCard} onBack={() => setPage('home')} onCardClick={openCard} onProfile={() => setPage('profile')} crystals={CRYSTALS} />;
+    return (
+      <CardDetailPage
+        card={selectedCard}
+        onBack={() => setPage('home')}
+        onCardClick={openCard}
+        onProfile={() => setPage('profile')}
+        crystals={CRYSTALS}
+      />
+    );
   }
 
   return <HomePage onProfile={() => setPage('profile')} onCardClick={openCard} />;

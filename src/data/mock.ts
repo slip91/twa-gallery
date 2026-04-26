@@ -15,7 +15,10 @@ const IMGS = Array.from({ length: 12 }, (_, i) => `./images/${i + 1}.jpg`);
 // Seeded pseudo-random for stable order between renders
 function seededRand(seed: number) {
   let s = seed;
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
 }
 
 const rand = seededRand(42);
