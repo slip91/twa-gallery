@@ -8,8 +8,8 @@ interface CardItemProps {
   isDesktop?: boolean;
 }
 
-const DESKTOP_HEIGHTS = [260, 320, 280, 240, 300, 360] as const;
-const MOBILE_HEIGHT = 180;
+const DESKTOP_HEIGHTS = [280, 340, 300, 260, 320, 380] as const;
+const MOBILE_HEIGHT = 200;
 const HLS_CONFIG = {
   maxBufferLength: 5,
   maxMaxBufferLength: 10,

@@ -9,6 +9,8 @@ import { HomeNavIcon } from '../components/Icons/HomeNavIcon';
 import { GridNavIcon } from '../components/Icons/GridNavIcon';
 import { TariffsIcon } from '../components/Icons/TariffsIcon';
 import { DiamondNavIcon } from '../components/Icons/DiamondNavIcon';
+import { InfoIcon } from '../components/Icons/InfoIcon';
+import { WorkspaceIcon } from '../components/Icons/WorkspaceIcon';
 import { PlusIcon } from '../components/Icons/PlusIcon';
 import { useHaptic } from '../hooks/useHaptic';
 import { CRYSTALS } from '../constants';
@@ -65,6 +67,9 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
               >
                 {item.key === 'home' && <HomeNavIcon size={NAV_ICON_SIZE} active={activeTab === 'home'} />}
                 {item.key === 'gallery' && <GalleryIcon size={NAV_ICON_SIZE} />}
+                {item.key === 'tariffs' && <TariffsIcon size={NAV_ICON_SIZE} active={activeTab === 'tariffs'} />}
+                {item.key === 'crystals' && <DiamondNavIcon size={NAV_ICON_SIZE} active={activeTab === 'crystals'} />}
+                {item.key === 'about' && <InfoIcon size={NAV_ICON_SIZE} />}
                 {item.label}
               </button>
             ))}
@@ -73,6 +78,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
           {/* Right side */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button className="hidden lg:flex items-center gap-1.5 bg-[var(--twa-surface2)] px-3 py-1.5 rounded-lg text-xs text-[var(--twa-hint)] hover:text-white transition-colors">
+              <WorkspaceIcon size={NAV_ICON_SIZE} />
               Рабочее пространство
             </button>
             <button

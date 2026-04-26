@@ -4,6 +4,8 @@ export { DiamondNavIcon } from './DiamondNavIcon';
 export { GalleryIcon } from './GalleryIcon';
 export { GridNavIcon } from './GridNavIcon';
 export { HomeNavIcon } from './HomeNavIcon';
+export { InfoIcon } from './InfoIcon';
 export { LogoIcon } from './LogoIcon';
 export { PlusIcon } from './PlusIcon';
 export { TariffsIcon } from './TariffsIcon';
+export { WorkspaceIcon } from './WorkspaceIcon';

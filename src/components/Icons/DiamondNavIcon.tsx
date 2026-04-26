@@ -1,5 +1,5 @@
-export const DiamondNavIcon = ({ active }: { active?: boolean }) => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+export const DiamondNavIcon = ({ active, size = 22 }: { active?: boolean; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M11 3L18 8L15 19H7L4 8L11 3Z"
       stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
       fill={active ? 'currentColor' : 'none'}
