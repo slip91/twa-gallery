@@ -32,9 +32,14 @@ function stopVideo(video: HTMLVideoElement, hlsRef: React.MutableRefObject<Hls |
   }
 }
 
+function getViewportHeight(): number {
+  // In Telegram WebView innerHeight can be 0 during initialization
+  return window.innerHeight || document.documentElement.clientHeight || 667;
+}
+
 function isElementVisible(el: HTMLElement): boolean {
   const { top, bottom } = el.getBoundingClientRect();
-  const vh = window.innerHeight;
+  const vh = getViewportHeight();
   return bottom > -VISIBILITY_BUFFER && top < vh + VISIBILITY_BUFFER;
 }
 
@@ -47,35 +52,41 @@ export const CardItem = memo(function CardItem({ card, isDesktop = false }: Card
   const isVisibleRef = useRef(false);
   const cardHeight = useMemo(() => getCardHeight(card, isDesktop), [card, isDesktop]);
 
-  // Scroll-based visibility — works reliably in Telegram WebView
+  // Visibility detection — scroll events + polling fallback for Telegram WebView
+  // In Telegram WebView scroll events on window may not fire (native scroll container),
+  // so we poll every 250ms as a reliable fallback.
   useEffect(() => {
     if (!isVideo) return;
     const el = articleRef.current;
     if (!el) return;
 
-    let rafId = 0;
-
-    const onScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const visible = isElementVisible(el);
-        if (visible !== isVisibleRef.current) {
-          isVisibleRef.current = visible;
-          setIsVisible(visible);
-        }
-      });
+    const check = () => {
+      const visible = isElementVisible(el);
+      if (visible !== isVisibleRef.current) {
+        isVisibleRef.current = visible;
+        setIsVisible(visible);
+      }
     };
 
-    // Initial check
-    const visible = isElementVisible(el);
-    isVisibleRef.current = visible;
-    setIsVisible(visible);
+    // Scroll events (regular browsers)
+    window.addEventListener('scroll', check, { passive: true });
+    document.addEventListener('scroll', check, { passive: true });
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    // Polling — fires regardless of scroll event availability (Telegram WebView)
+    // and also handles the case where innerHeight=0 on initial render
+    const intervalId = setInterval(check, 250);
+
+    // Initial checks: immediate + deferred to handle Telegram WebView layout settling
+    check();
+    const t1 = setTimeout(check, 100);
+    const t2 = setTimeout(check, 500);
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', check);
+      document.removeEventListener('scroll', check);
+      clearInterval(intervalId);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [isVideo]);
 
