@@ -82,10 +82,15 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     // Polling fallback — catches cases where scroll events still don't fire
     const intervalId = setInterval(checkVisibility, POLL_INTERVAL);
 
-    // Deferred initial checks — Telegram WebView may not have settled layout yet
+    // resize fires when Telegram WebApp finishes expanding — good trigger for initial check
+    window.addEventListener('resize', checkVisibility, { passive: true });
+
+    // Deferred initial checks — Telegram WebApp expands with animation,
+    // clientHeight may be 0 or wrong for first few hundred ms
     checkVisibility();
     const t1 = setTimeout(checkVisibility, 100);
     const t2 = setTimeout(checkVisibility, 600);
+    const t3 = setTimeout(checkVisibility, 1500);
 
     return () => {
       if (scrollEl) {
@@ -94,9 +99,11 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
         window.removeEventListener('scroll', onScroll);
         document.removeEventListener('scroll', onScroll);
       }
+      window.removeEventListener('resize', checkVisibility);
       clearInterval(intervalId);
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, [checkVisibility]);
 
