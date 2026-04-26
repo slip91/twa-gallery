@@ -1,1 +1,9 @@
+export { AddIcon } from './AddIcon';
+export { CrystalIcon } from './CrystalIcon';
+export { DiamondNavIcon } from './DiamondNavIcon';
 export { GalleryIcon } from './GalleryIcon';
+export { GridNavIcon } from './GridNavIcon';
+export { HomeNavIcon } from './HomeNavIcon';
+export { LogoIcon } from './LogoIcon';
+export { PlusIcon } from './PlusIcon';
+export { TariffsIcon } from './TariffsIcon';

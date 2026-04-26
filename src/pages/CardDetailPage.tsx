@@ -14,10 +14,10 @@ interface CardDetailPageProps {
   onBack: () => void;
   onCardClick: (card: CardItem) => void;
   onProfile: () => void;
-  crystals: number;
 }
 
-export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals }: CardDetailPageProps) {
+export function CardDetailPage({ card, onBack, onCardClick, onProfile }: CardDetailPageProps) {
+  const crystals = CRYSTALS;
   const isVideo = card.type === 'video' && card.videoUrl;
   const [activeTab, setActiveTab] = useState(0);
 
@@ -123,10 +123,15 @@ export function CardDetailPage({ card, onBack, onCardClick, onProfile, crystals 
                     className="cursor-pointer rounded-2xl overflow-hidden bg-[var(--twa-surface)] active:opacity-70"
                   >
                     <div className="w-full aspect-square relative">
-                      {item.type === 'video' && item.videoUrl ? (
-                        <HlsVideo src={item.videoUrl} muted loop className="w-full h-full object-cover" />
-                      ) : (
-                        <img src={item.poster} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
+                      <img src={item.poster} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
+                      {item.type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                            <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
+                              <path d="M1 1.5L11 7L1 12.5V1.5Z" fill="white" />
+                            </svg>
+                          </div>
+                        </div>
                       )}
                       {item.isHot && (
                         <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-[var(--twa-hot)] rounded px-1 py-0.5">

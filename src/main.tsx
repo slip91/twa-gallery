@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CardDetailPage } from './pages/CardDetailPage';
-import { CRYSTALS } from './constants';
 import type { CardItem } from './types/gallery';
 import './index.css';
 
@@ -29,7 +28,6 @@ function App() {
         onBack={() => setPage('home')}
         onCardClick={openCard}
         onProfile={() => setPage('profile')}
-        crystals={CRYSTALS}
       />
     );
   }
