@@ -41,7 +41,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--twa-bg)] flex flex-col pt-safe">
+    <div className="bg-[var(--twa-bg)] flex flex-col pt-safe" style={{ height: '100dvh', overflow: 'hidden' }}>
       {/* Header */}
       <header className="bg-[var(--twa-surface)] border-b border-[var(--twa-border)]">
         <div className="max-w-[1280px] mx-auto px-4 h-12 flex items-center justify-between gap-4">
@@ -92,8 +92,12 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
         </div>
       </header>
 
-      {/* Content */}
-      <div className="max-w-[1280px] mx-auto w-full flex-1 flex flex-col">
+      {/* Content — JS-controlled scroll container.
+          Telegram WebView uses native scroll for body, making window.scrollY=0
+          and getBoundingClientRect frozen. This div owns the scroll so JS
+          can read scrollTop and receive scroll events reliably. */}
+      <div id="main-scroll" className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="max-w-[1280px] mx-auto w-full flex flex-col">
         <BannerSlider />
 
         {/* Gallery title */}
@@ -104,6 +108,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
         </div>
 
         <Gallery onCardClick={onCardClick} />
+      </div>
       </div>
 
       {/* Bottom Nav — mobile only */}

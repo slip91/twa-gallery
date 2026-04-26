@@ -18,8 +18,15 @@ const VISIBILITY_BUFFER = 200;
 const POLL_INTERVAL = 250;
 const LOAD_MORE_THRESHOLD = 300;
 
+function getScrollEl(): HTMLElement | null {
+  return document.getElementById('main-scroll');
+}
+
 function getViewportHeight(): number {
-  return window.innerHeight || document.documentElement.clientHeight || 667;
+  return getScrollEl()?.clientHeight
+    || window.innerHeight
+    || document.documentElement.clientHeight
+    || 667;
 }
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
@@ -49,13 +56,11 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       return newActive;
     });
 
-    // Infinite scroll via getBoundingClientRect on the last card —
-    // window.scrollY is always 0 in Telegram WebView so we can't use it
-    const allCards = document.querySelectorAll<HTMLElement>('[data-card-id]');
-    const lastCard = allCards[allCards.length - 1];
-    if (lastCard) {
-      const { bottom } = lastCard.getBoundingClientRect();
-      if (bottom < vh + LOAD_MORE_THRESHOLD) {
+    // Infinite scroll via JS scroll container (reliable in Telegram WebView)
+    const scrollEl = getScrollEl();
+    if (scrollEl) {
+      const { scrollTop, clientHeight, scrollHeight } = scrollEl;
+      if (scrollTop + clientHeight >= scrollHeight - LOAD_MORE_THRESHOLD) {
         setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
       }
     }
@@ -64,10 +69,17 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   useEffect(() => {
     const onScroll = () => checkVisibility();
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    document.addEventListener('scroll', onScroll, { passive: true });
+    // Prefer our JS scroll container — it fires reliable scroll events in Telegram WebView
+    // Fall back to window/document for regular browsers
+    const scrollEl = getScrollEl();
+    if (scrollEl) {
+      scrollEl.addEventListener('scroll', onScroll, { passive: true });
+    } else {
+      window.addEventListener('scroll', onScroll, { passive: true });
+      document.addEventListener('scroll', onScroll, { passive: true });
+    }
 
-    // Primary mechanism for Telegram WebView
+    // Polling fallback — catches cases where scroll events still don't fire
     const intervalId = setInterval(checkVisibility, POLL_INTERVAL);
 
     // Deferred initial checks — Telegram WebView may not have settled layout yet
@@ -76,8 +88,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     const t2 = setTimeout(checkVisibility, 600);
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      document.removeEventListener('scroll', onScroll);
+      if (scrollEl) {
+        scrollEl.removeEventListener('scroll', onScroll);
+      } else {
+        window.removeEventListener('scroll', onScroll);
+        document.removeEventListener('scroll', onScroll);
+      }
       clearInterval(intervalId);
       clearTimeout(t1);
       clearTimeout(t2);
