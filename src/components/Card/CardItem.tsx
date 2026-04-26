@@ -82,7 +82,13 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
           playWithRetry(video);
         }
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // iOS native HLS: set autoplay=true BEFORE src so the browser
+        // handles playback itself — muted+playsInline+autoplay works
+        // without user gesture on iOS without calling play() explicitly
+        video.autoplay = true;
         video.src = url;
+        video.load();
+        // playWithRetry as fallback in case autoplay is still blocked
         playWithRetry(video);
       }
     }, START_DEBOUNCE_MS);
