@@ -9,12 +9,14 @@ interface CardGridProps {
 }
 
 const BATCH_SIZE = 20;
-const LOAD_MORE_THRESHOLD = 300;
 const COLS_MOBILE = 2;
 const COLS_DESKTOP = 4;
-const ROW_HEIGHT_MOBILE = 240;
-const ROW_HEIGHT_DESKTOP = 240;
-const BUFFER_ROWS = 4;
+// px buffer around viewport — preload before entering, keep after leaving
+const VISIBILITY_BUFFER = 200;
+// How often to poll for visibility (ms) — main mechanism for Telegram WebView
+// where window.scrollY and scroll events are unreliable
+const POLL_INTERVAL = 250;
+const LOAD_MORE_THRESHOLD = 300;
 
 function getViewportHeight(): number {
   return window.innerHeight || document.documentElement.clientHeight || 667;
@@ -27,66 +29,56 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
 
   const visibleCards = useMemo(() => cards.slice(0, visibleCount), [cards, visibleCount]);
 
-  const handleScroll = useCallback(() => {
-    const scrollTop = window.scrollY;
-    const viewH = getViewportHeight();
-    const cols = isDesktop ? COLS_DESKTOP : COLS_MOBILE;
-    const rowH = isDesktop ? ROW_HEIGHT_DESKTOP : ROW_HEIGHT_MOBILE;
-
-    const firstRow = Math.max(0, Math.floor((scrollTop - viewH) / rowH) - BUFFER_ROWS);
-    const lastRow = Math.ceil((scrollTop + viewH * 2) / rowH) + BUFFER_ROWS;
-
-    const start = firstRow * cols;
-    const end = Math.min(lastRow * cols, visibleCount);
-
+  const checkVisibility = useCallback(() => {
+    const vh = getViewportHeight();
     const newActive = new Set<string>();
-    for (let i = Math.max(0, start); i < end; i++) {
-      if (cards[i]) newActive.add(cards[i].id);
-    }
 
-    setActiveIds(newActive);
+    // getBoundingClientRect works regardless of which scroll container is active —
+    // even if Telegram WebView scrolls natively and window.scrollY stays 0
+    document.querySelectorAll<HTMLElement>('[data-card-id]').forEach(el => {
+      const { top, bottom } = el.getBoundingClientRect();
+      if (bottom > -VISIBILITY_BUFFER && top < vh + VISIBILITY_BUFFER) {
+        const id = el.getAttribute('data-card-id');
+        if (id) newActive.add(id);
+      }
+    });
 
-    // Infinite scroll
-    if (scrollTop + viewH >= document.documentElement.scrollHeight - LOAD_MORE_THRESHOLD) {
+    setActiveIds(prev => {
+      // Only update state if something actually changed
+      if (prev.size === newActive.size && [...newActive].every(id => prev.has(id))) return prev;
+      return newActive;
+    });
+
+    // Infinite scroll — try multiple sources since window.scrollY may be 0
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    if (scrollTop + vh >= scrollHeight - LOAD_MORE_THRESHOLD) {
       setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
     }
-  }, [cards, isDesktop, visibleCount]);
+  }, [cards.length]);
 
   useEffect(() => {
-    let rafId: number;
-    let ticking = false;
+    const onScroll = () => checkVisibility();
 
-    const onScroll = () => {
-      if (!ticking) {
-        rafId = requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    // Listen on both window and document — different WebViews fire on different targets
     window.addEventListener('scroll', onScroll, { passive: true });
     document.addEventListener('scroll', onScroll, { passive: true });
 
-    // Polling fallback for Telegram WebView where scroll events may not fire
-    const intervalId = setInterval(handleScroll, 300);
+    // Primary mechanism for Telegram WebView
+    const intervalId = setInterval(checkVisibility, POLL_INTERVAL);
 
-    // Initial checks — deferred to handle Telegram WebView layout settling
-    handleScroll();
-    const t1 = setTimeout(handleScroll, 100);
-    const t2 = setTimeout(handleScroll, 600);
+    // Deferred initial checks — Telegram WebView may not have settled layout yet
+    checkVisibility();
+    const t1 = setTimeout(checkVisibility, 100);
+    const t2 = setTimeout(checkVisibility, 600);
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       document.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(rafId);
       clearInterval(intervalId);
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [handleScroll]);
+  }, [checkVisibility]);
 
   // Reset when category changes
   useEffect(() => {
@@ -106,7 +98,12 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       style={isDesktop ? undefined : { gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {visibleCards.map((card) => (
-        <div key={card.id} onClick={() => onCardClick(card)} className="mb-3 break-inside-avoid">
+        <div
+          key={card.id}
+          data-card-id={card.id}
+          onClick={() => onCardClick(card)}
+          className="mb-3 break-inside-avoid"
+        >
           <CardItem
             card={card}
             isActive={activeIds.has(card.id)}
