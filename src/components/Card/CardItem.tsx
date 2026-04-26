@@ -14,8 +14,7 @@ const HLS_CONFIG = {
   maxMaxBufferLength: 10,
 } as const;
 const START_DEBOUNCE_MS = 150;
-// Start loading a bit before card enters viewport, stop shortly after it leaves
-const IO_ROOT_MARGIN = '100px 0px';
+const VISIBILITY_BUFFER = 100; // px — preload before card enters viewport
 
 function getCardHeight(card: CardItemType, isDesktop: boolean): number {
   if (!isDesktop) return MOBILE_HEIGHT;
@@ -33,6 +32,12 @@ function stopVideo(video: HTMLVideoElement, hlsRef: React.MutableRefObject<Hls |
   }
 }
 
+function isElementVisible(el: HTMLElement): boolean {
+  const { top, bottom } = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  return bottom > -VISIBILITY_BUFFER && top < vh + VISIBILITY_BUFFER;
+}
+
 export const CardItem = memo(function CardItem({ card, isDesktop = false }: CardItemProps) {
   const isVideo = card.type === 'video' && !!card.videoUrl;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -42,24 +47,39 @@ export const CardItem = memo(function CardItem({ card, isDesktop = false }: Card
   const isVisibleRef = useRef(false);
   const cardHeight = useMemo(() => getCardHeight(card, isDesktop), [card, isDesktop]);
 
-  // IntersectionObserver — точно определяет видимость для любого лейаута
+  // Scroll-based visibility — works reliably in Telegram WebView
   useEffect(() => {
     if (!isVideo) return;
     const el = articleRef.current;
     if (!el) return;
 
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        isVisibleRef.current = entry.isIntersecting;
-        setIsVisible(entry.isIntersecting);
-      },
-      { rootMargin: IO_ROOT_MARGIN, threshold: 0 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    let rafId = 0;
+
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const visible = isElementVisible(el);
+        if (visible !== isVisibleRef.current) {
+          isVisibleRef.current = visible;
+          setIsVisible(visible);
+        }
+      });
+    };
+
+    // Initial check
+    const visible = isElementVisible(el);
+    isVisibleRef.current = visible;
+    setIsVisible(visible);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(rafId);
+    };
   }, [isVideo]);
 
-  // Запускаем/останавливаем видео в зависимости от видимости
+  // Start / stop video based on visibility
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo) return;
@@ -102,9 +122,21 @@ export const CardItem = memo(function CardItem({ card, isDesktop = false }: Card
     >
       <div className="w-full relative flex-shrink-0" style={{ height: cardHeight }}>
         {isVideo ? (
-          <video ref={videoRef} muted playsInline loop preload="none" className="w-full h-full object-cover block" />
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            loop
+            preload="none"
+            className="w-full h-full object-cover block"
+          />
         ) : (
-          <img src={card.poster} alt={card.title} loading="lazy" className="w-full h-full object-cover block" />
+          <img
+            src={card.poster}
+            alt={card.title}
+            loading="lazy"
+            className="w-full h-full object-cover block"
+          />
         )}
         {card.isHot && (
           <div className="absolute top-2 right-2 flex items-center gap-1 bg-[var(--twa-hot)] rounded-md px-1.5 py-0.5">
