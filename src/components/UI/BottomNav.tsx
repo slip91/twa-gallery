@@ -44,7 +44,7 @@ export function BottomNav({ activePage, onNavigate }: BottomNavProps) {
   const { impact } = useHaptic();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--twa-surface)] border-t border-[var(--twa-border)] pb-safe md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--twa-surface)] border-t border-[var(--twa-border)] pb-safe lg:hidden">
       <div className="flex items-center justify-around h-16">
         <NavButton page="home" activePage={activePage} onNavigate={onNavigate} icon={<HomeNavIcon active={activePage === 'home'} />} label={NAV_LABELS.home} />
         <NavButton page="gallery" activePage={activePage} onNavigate={onNavigate} icon={<GalleryIcon />} label={NAV_LABELS.gallery} />

@@ -52,7 +52,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
           </div>
 
           {/* Desktop nav links */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {desktopNavItems.map(item => (
               <button
                 key={item.key}
@@ -72,7 +72,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button className="hidden md:flex items-center gap-1.5 bg-[var(--twa-surface2)] px-3 py-1.5 rounded-lg text-xs text-[var(--twa-hint)] hover:text-white transition-colors">
+            <button className="hidden lg:flex items-center gap-1.5 bg-[var(--twa-surface2)] px-3 py-1.5 rounded-lg text-xs text-[var(--twa-hint)] hover:text-white transition-colors">
               Рабочее пространство
             </button>
             <button
@@ -98,8 +98,8 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
 
         {/* Gallery title */}
         <div className="px-4 pt-2 pb-0 flex items-center gap-2">
-          <span className="text-[var(--twa-hint)] hidden md:inline"><GalleryIcon size={32} /></span>
-          <span className="text-[var(--twa-hint)] md:hidden"><GalleryIcon size={24} /></span>
+          <span className="text-[var(--twa-hint)] hidden lg:inline"><GalleryIcon size={32} /></span>
+          <span className="text-[var(--twa-hint)] lg:hidden"><GalleryIcon size={24} /></span>
           <h2 className="text-white font-bold text-2xl">Галерея</h2>
         </div>
 
@@ -107,7 +107,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
       </div>
 
       {/* Bottom Nav — mobile only */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--twa-surface)] border-t border-[var(--twa-border)] pb-safe md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--twa-surface)] border-t border-[var(--twa-border)] pb-safe lg:hidden">
         <div className="flex items-center justify-around h-16">
           <button
             onClick={() => handleTab('home')}

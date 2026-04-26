@@ -12,7 +12,7 @@ const BATCH_SIZE = 20;
 const LOAD_MORE_THRESHOLD = 200;
 
 export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridProps) {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
 
   const visibleCards = useMemo(() => cards.slice(0, visibleCount), [cards, visibleCount]);

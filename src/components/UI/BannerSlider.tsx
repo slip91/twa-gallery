@@ -4,9 +4,9 @@ import { BANNER_SLIDES } from '../../data/mock';
 export const BannerSlider = memo(function BannerSlider() {
   return (
     <div className="py-3">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-4">
         {BANNER_SLIDES.map((slide, i) => (
-          <div key={slide.id} className={`${i >= 2 ? 'hidden md:flex' : 'flex'} relative rounded-2xl overflow-hidden h-[100px] md:h-[112px] bg-[var(--twa-surface)] cursor-pointer active:opacity-80 transition-opacity`}>
+          <div key={slide.id} className={`${i >= 2 ? 'hidden lg:flex' : 'flex'} relative rounded-2xl overflow-hidden h-[100px] lg:h-[112px] bg-[var(--twa-surface)] cursor-pointer active:opacity-80 transition-opacity`}>
             <div className="flex-1 flex flex-col justify-center px-3 py-2 gap-1 z-10">
               <p className="text-white text-[11px] font-semibold leading-snug line-clamp-3">{slide.title}</p>
               {slide.subtitle && (
