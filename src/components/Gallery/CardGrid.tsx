@@ -107,10 +107,14 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
     };
   }, [checkVisibility]);
 
-  // Reset when category changes
+  // On mount and category change: activate top cards immediately without waiting
+  // for visibility checks. Telegram WebApp animates open (~300-500ms) so
+  // getBoundingClientRect may return wrong values until animation completes.
+  // Polling will correct visibility once layout settles.
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-    setActiveIds(new Set());
+    // Activate first 8 cards immediately (covers ~2 screens worth of content)
+    setActiveIds(new Set(cards.slice(0, 8).map(c => c.id)));
   }, [cards]);
 
   if (cards.length === 0) {
