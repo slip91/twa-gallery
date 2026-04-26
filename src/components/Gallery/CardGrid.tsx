@@ -49,11 +49,15 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
       return newActive;
     });
 
-    // Infinite scroll — try multiple sources since window.scrollY may be 0
-    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-    if (scrollTop + vh >= scrollHeight - LOAD_MORE_THRESHOLD) {
-      setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
+    // Infinite scroll via getBoundingClientRect on the last card —
+    // window.scrollY is always 0 in Telegram WebView so we can't use it
+    const allCards = document.querySelectorAll<HTMLElement>('[data-card-id]');
+    const lastCard = allCards[allCards.length - 1];
+    if (lastCard) {
+      const { bottom } = lastCard.getBoundingClientRect();
+      if (bottom < vh + LOAD_MORE_THRESHOLD) {
+        setVisibleCount(prev => Math.min(prev + BATCH_SIZE, cards.length));
+      }
     }
   }, [cards.length]);
 
