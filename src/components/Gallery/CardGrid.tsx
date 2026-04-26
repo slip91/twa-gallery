@@ -67,7 +67,7 @@ export const CardGrid = memo(function CardGrid({ cards, onCardClick }: CardGridP
   }, [cards.length]);
 
   useEffect(() => {
-    const onScroll = () => checkVisibility();
+    const onScroll = checkVisibility;
 
     // Prefer our JS scroll container — it fires reliable scroll events in Telegram WebView
     // Fall back to window/document for regular browsers

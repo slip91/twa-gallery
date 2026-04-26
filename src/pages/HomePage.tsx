@@ -58,7 +58,7 @@ export function HomePage({ onProfile, onCardClick }: HomePageProps) {
             {desktopNavItems.map(item => (
               <button
                 key={item.key}
-                onClick={() => { impact(); if (item.key !== 'about') handleTab(item.key as NavTab); }}
+                onClick={() => item.key === 'about' ? impact() : handleTab(item.key as NavTab)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === item.key
                     ? 'text-white bg-white/10'

@@ -16,6 +16,16 @@ const HLS_CONFIG = {
   startLevel: -1,
 } as const;
 
+// Same retry pattern as CardItem — if play() is rejected by autoplay policy,
+// wait for the next user gesture and retry.
+function playWithRetry(video: HTMLVideoElement) {
+  video.play().catch(() => {
+    const retry = () => { video.play().catch(() => {}); };
+    document.addEventListener('touchstart', retry, { once: true, passive: true });
+    document.addEventListener('click', retry, { once: true });
+  });
+}
+
 export const HlsVideo = memo(function HlsVideo({
   src,
   muted = true,
@@ -25,7 +35,6 @@ export const HlsVideo = memo(function HlsVideo({
   onClick,
 }: HlsVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -33,14 +42,12 @@ export const HlsVideo = memo(function HlsVideo({
 
     if (Hls.isSupported() && src.endsWith('.m3u8')) {
       const hls = new Hls(HLS_CONFIG);
-      hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
 
       if (autoPlay) {
-        hls.on(Hls.Events.MANIFEST_PARSED, (_, details) => {
-          hls.currentLevel = details.levels.length - 1;
-          video.play().catch(() => {});
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          playWithRetry(video);
         });
       }
 
@@ -48,12 +55,12 @@ export const HlsVideo = memo(function HlsVideo({
     }
 
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // autoplay=true before src so the browser handles playback itself
+      // (muted + playsInline + autoplay = allowed without user gesture on iOS)
+      video.autoplay = autoPlay;
       video.src = src;
-      if (autoPlay) {
-        video.addEventListener('loadeddata', () => {
-          video.play().catch(() => {});
-        });
-      }
+      video.load();
+      if (autoPlay) playWithRetry(video);
     }
   }, [src, autoPlay]);
 

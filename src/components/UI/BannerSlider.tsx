@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { BANNER_SLIDES } from '../../data/mock';
 
 const AUTO_SCROLL_MS = 3500;
@@ -6,17 +6,24 @@ const AUTO_SCROLL_MS = 3500;
 export function BannerSlider() {
   const [current, setCurrent] = useState(0);
   const total = BANNER_SLIDES.length;
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const next = useCallback(() => {
-    setCurrent(prev => (prev + 1) % total);
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCurrent(prev => (prev + 1) % total);
+    }, AUTO_SCROLL_MS);
   }, [total]);
 
-  const goTo = (i: number) => setCurrent(i);
+  const goTo = useCallback((i: number) => {
+    setCurrent(i);
+    startTimer(); // reset auto-scroll on manual navigation
+  }, [startTimer]);
 
   useEffect(() => {
-    const timer = setInterval(next, AUTO_SCROLL_MS);
-    return () => clearInterval(timer);
-  }, [next]);
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [startTimer]);
 
   return (
     <div className="py-3 px-4">
