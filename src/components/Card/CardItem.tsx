@@ -32,6 +32,18 @@ function stopVideo(video: HTMLVideoElement, hlsRef: React.MutableRefObject<Hls |
   }
 }
 
+// iOS autoplay policy blocks play() without a user gesture.
+// If rejected, retry on the next touch/click (which counts as a gesture).
+function playWithRetry(video: HTMLVideoElement) {
+  video.play().catch(() => {
+    const retry = () => {
+      playWithRetry(video);
+    };
+    document.addEventListener('touchstart', retry, { once: true, passive: true });
+    document.addEventListener('click', retry, { once: true });
+  });
+}
+
 export const CardItem = memo(function CardItem({ card, isActive = false, isDesktop = false }: CardItemProps) {
   const isVideo = card.type === 'video' && !!card.videoUrl;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -64,14 +76,14 @@ export const CardItem = memo(function CardItem({ card, isActive = false, isDeskt
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             if (!isActiveRef.current || !video) return;
             hls.startLevel = hls.firstLevel;
-            video.play().catch(() => {});
+            playWithRetry(video);
           });
         } else {
-          video.play().catch(() => {});
+          playWithRetry(video);
         }
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
-        video.play().catch(() => {});
+        playWithRetry(video);
       }
     }, START_DEBOUNCE_MS);
 
