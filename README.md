@@ -1,6 +1,6 @@
 # TWA Gallery
 
-Видео-галерея для Telegram WebApp. 105 карточек (5 статичных + 100 видео), 4 уникальных видео URL. Работает в Telegram WebView и в обычном браузере.
+Видео-галерея для Telegram WebApp. 74 карточки в 3 категориях (Оживление, Фото, Видео), HLS-видео через hls.js. Работает в Telegram WebView и в обычном браузере.
 
 ---
 
@@ -12,7 +12,7 @@ Telegram WebApp — это не обычный браузер. Он работа
 2. **WebView-рантайм** — не все Web API работают так же, как в Chrome
 3. **60fps скролл** — если скролл тормозит, пользователи бросают приложение
 
-Нужно было показать 105 карточек плавно и быстро.
+Нужно было показать 74 карточки плавно и быстро, не жечь ресурсы на видео вне экрана.
 
 ---
 
@@ -30,64 +30,58 @@ const [page, setPage] = useState<'home' | 'profile' | 'card'>('home');
 
 Это работает везде. Это не баг, это архитектурное решение.
 
-**Альтернатива:** Можно было попробовать react-router v5, но там проблемы с TypeScript и он deprecated. Проще написать 5 строчек навигации, чем тащить legacy-роутер.
-
 ---
 
-### Видео: не все сразу
+### Видео: IntersectionObserver per-card
 
-**Проблема:** 105 видео одновременно — это 105 HTTP-запросов и 105 декодеров. Телефон задохнётся.
+**Проблема:** Много видео одновременно — это много HTTP-запросов и декодеров. Телефон задохнётся.
 
-**Решение:** Видео запускается только когда карточка в зоне видимости. Всё остальное время — просто постер (статичная картинка).
-
-**Как работает:**
+**Решение:** Каждая карточка сама следит за своей видимостью через `IntersectionObserver`. Видео запускается только когда карточка входит в viewport. Всё остальное время — просто постер (статичная картинка).
 
 ```
-Скролл → расчёт: какая карточка в viewport
-       → передаём isActive в CardItem
-       → isActive=true: запускаем видео (debounced 100ms)
-       → isActive=false: останавливаем, убираем src, destroy HLS
+Карточка попадает в viewport (+ 100px preload margin)
+  → debounce 150ms (защита от быстрого скролла)
+  → запускаем HLS-видео
+
+Карточка уходит из viewport
+  → pause + removeAttribute('src') + hls.destroy()
+  → освобождаем декодер и память
 ```
 
-Никаких IntersectionObserver (они глючат в WebView). Ручной расчёт по `scrollY`, `getBoundingClientRect()`, фиксированная высота строки.
+Каждый `CardItem` содержит свой `IntersectionObserver`. Это layout-agnostic — работает одинаково для masonry (desktop) и grid (mobile).
 
 ---
 
 ### Виртуализация: НЕТ
 
-**Почему нет:** `@tanstack/react-virtual` отлично работает на десктопе, но в мобильных WebView вызывал баги с CSS `position: sticky` и overlay-элементами. Плюс, 105 карточек и так рендерятся без проблем.
+**Почему нет:** `@tanstack/react-virtual` отлично работает на десктопе, но в мобильных WebView вызывал баги с CSS `position: sticky` и overlay-элементами.
 
-**Что используем вместо:** Batch loading. Показываем первые 20 карточек. По мере скролла подгружаем ещё по 20. В DOM в любой момент ~40-60 карточек, остальные не рендерятся благодаря `.slice()`.
+**Что используем вместо:** Batch loading. Показываем первые 20 карточек. По мере скролла подгружаем ещё по 20. В DOM в любой момент ~40-60 карточек.
 
 ```tsx
 const [visibleCount, setVisibleCount] = useState(20);
-// ...
 const visibleCards = cards.slice(0, visibleCount);
 ```
-
-Это не виртуализация в классическом смысле, но работает стабильно и не ломает CSS.
 
 ---
 
 ### Desktop: masonry-style
 
-На десктопе карточки разной высоты: `[260, 320, 280, 240, 300, 360]`. Это создаёт визуально Pinterest-style сетку через CSS columns.
+На десктопе карточки разной высоты: `[260, 320, 280, 240, 300, 360]px`. Создаёт Pinterest-style сетку через CSS columns.
 
-**Почему не grid:** Grid не умеет в masonry из коробки. CSS columns — это одна строка кода:
+```css
+/* desktop */
+columns: 4;
 
-```tsx
-style={isDesktop ? undefined : { gridTemplateColumns: `repeat(2, 1fr)` }}
+/* mobile */
+grid-template-columns: repeat(2, 1fr);
 ```
-
-На десктопе используем обычный CSS columns, на мобильных — grid.
 
 ---
 
 ### Telegram SDK: graceful degradation
 
-Приложение должно работать даже если Telegram SDK недоступен (например, открыли ссылку в Safari напрямую).
-
-**Как:** Все вызовы SDK обёрнуты в `try/catch`. Haptic feedback просто не срабатывает, приложение работает дальше.
+Приложение работает даже если Telegram SDK недоступен (открыли в Safari напрямую).
 
 ```tsx
 const impact = (style: 'light' | 'medium' | 'heavy') => {
@@ -99,17 +93,27 @@ const impact = (style: 'light' | 'medium' | 'heavy') => {
 
 ---
 
+## Mock-данные
+
+| Категория | Карточек | Видео |
+|-----------|----------|-------|
+| Оживление | 18 | ~60% |
+| Фото | 16 | ~25% |
+| Видео | 40 | 100% |
+
+Генерируются с seeded pseudo-random (LCG, seed=42) — порядок стабильный между рендерами.
+
+---
+
 ## Стек
 
 | | |
 |---|---|
-| React 18 + TypeScript | Без StrictMode (он ломал WebView) |
+| React 18 + TypeScript | Без StrictMode (ломал DOM reset в WebView) |
 | Vite 5 | Быстрая сборка |
 | Tailwind CSS v3 | Utility-first, mobile-first |
-| HLS.js | Потоковое видео |
-| `@tma.js/sdk-react` | Telegram SDK (не устаревший `@telegram-apps/sdk-react`) |
-
-**Примечание:** `react-router-dom` указан в package.json, но не используется. Это legacy от начального прототипа. Можно удалить.
+| HLS.js | Потоковое видео (.m3u8) |
+| `@tma.js/sdk-react` | Telegram SDK |
 
 ---
 
@@ -119,8 +123,6 @@ const impact = (style: 'light' | 'medium' | 'heavy') => {
 npm test --run
 ```
 
-7 тестов — проверяют целостность данных и breakpoint hook.
-
 ---
 
 ## CSS-переменные
@@ -128,28 +130,27 @@ npm test --run
 ```css
 :root {
   --twa-bg: #0d0d0d;
-  --twa-surface: #1a1a1a;
-  --twa-surface2: #2a2a2a;
-  --twa-border: rgba(255,255,255,0.1);
-  --twa-btn: #007bff;
-  --twa-hot: #ff3b30;
-  --twa-hint: rgba(255,255,255,0.5);
+  --twa-surface: #1e1e1e;
+  --twa-surface2: #242424;
+  --twa-text: #ffffff;
+  --twa-hint: #7f7f7f;
+  --twa-btn: #2481cc;
+  --twa-hot: #FF551D;
+  --twa-border: #2a2a2a;
 }
 ```
 
-Если Telegram передаёт свои `themeParams`, они перезаписывают эти значения.
-
 ---
 
-## Ключевые решения и почему
+## Ключевые решения
 
 | Решение | Почему | Альтернатива |
 |---------|--------|--------------|
 | useState навигация | react-router-dom падает в WebView | HashRouter — не решил проблему |
-| Скролл-расчёт вместо IntersectionObserver | IntersectionObserver ненадёжен в WebView | IntersectionObserver — глючит |
+| IntersectionObserver per-card | Layout-agnostic, точнее скролл-расчёта | Скролл-расчёт — ломался на masonry |
 | Batch loading вместо виртуализации | @tanstack/react-virtual ломал CSS overlay | Виртуализация — баги с sticky |
 | CSS columns на десктопе | Pinterest-style без JS | Grid — не умеет masonry |
-| HLS.js для видео | Нативный `<video>` не поддерживает .m3u8 | Статичные файлы — не гибко |
+| HLS.js для видео | Нативный `<video>` не поддерживает .m3u8 на Android | Статичные файлы — не гибко |
 | No StrictMode | Вызывал DOM reset в WebView | StrictMode — сломал приложение |
 
 ---
@@ -157,8 +158,9 @@ npm test --run
 ## Файлы для понимания
 
 - `src/pages/` — страницы (Home, Profile, CardDetail)
-- `src/components/Gallery/CardGrid.tsx` — логика видимости карточек
-- `src/components/Card/CardItem.tsx` — видео-плеер для карточки
+- `src/components/Gallery/CardGrid.tsx` — batch loading, infinite scroll
+- `src/components/Card/CardItem.tsx` — видео-плеер + IntersectionObserver per-card
+- `src/data/mock.ts` — генерация mock-данных с seeded random
 - `src/hooks/useHaptic.ts` — haptic feedback
 - `src/hooks/useBackButton.ts` — кнопка "назад" в Telegram
-- `src/components/Icons/` — все SVG-иконки вынесены в отдельные компоненты
+- `src/components/Icons/` — SVG-иконки
